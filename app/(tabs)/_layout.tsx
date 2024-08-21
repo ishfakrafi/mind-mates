@@ -1,37 +1,57 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { View, Text } from 'react-native'
+import React from 'react'
+import { Tabs, Redirect } from 'expo-router'
 
-import { TabBarIcon } from '@/components/navigation/TabBarIcon';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+const TabsLayout = () => {
   return (
-    <Tabs
+    <>
+      <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
+        tabBarShowLabel: true,
+        tabBarActiveTintColor: '#FFA001',
+        tabBarInactiveTintColor: '#CDCDE0',
+        tabBarStyle:{
+          backgroundColor: '#AB79FD',
+          borderTopColor: '#232533',
+          height: 84
+        }
       }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'home' : 'home-outline'} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'code-slash' : 'code-slash-outline'} color={color} />
-          ),
-        }}
-      />
-    </Tabs>
-  );
+        <Tabs.Screen
+          name="home"
+          options={{
+            title:'Home',
+            headerShown: false
+
+          }}
+        />
+
+        <Tabs.Screen
+          name="explore"
+          options={{
+            title:'Explore',
+            headerShown: false
+
+          }}
+        />
+        <Tabs.Screen
+          name="progress"
+          options={{
+            title:'Progress',
+            headerShown: false
+
+          }}/>
+          <Tabs.Screen
+          name="profile"
+          options={{
+            title:'Profile',
+            headerShown: false
+
+          }}
+        />
+      </Tabs>
+      <Text>_layout</Text>
+    </>
+  )
 }
+
+export default TabsLayout
