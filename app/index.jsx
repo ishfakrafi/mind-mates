@@ -17,7 +17,7 @@ export default function App() {
 
           <View className="relative mt-5">
             <CustomButton
-              title="Continue with Email"
+              title="Continue to MindMates"
               handlePress={() => router.push("/sign-in")}
               containerStyles="w-full mt-7"
             />
