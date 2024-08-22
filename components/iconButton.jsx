@@ -8,14 +8,14 @@ import {
   Image,
 } from "react-native";
 
-const CustomButton = ({
+const IconButton = ({
   title,
   handlePress,
   containerStyles,
   textStyles,
   isLoading,
+  icon,
   width = 200, // Default fixed width, you can adjust this
-  marginLeft = 0,
 }) => {
   return (
     <TouchableOpacity
@@ -24,12 +24,16 @@ const CustomButton = ({
       style={[
         styles.buttonContainer,
         { width }, // Apply fixed width
-        { marginLeft },
         isLoading && styles.buttonLoading,
         containerStyles,
       ]}
       disabled={isLoading}
     >
+      {icon && (
+        <View style={styles.iconContainer}>
+          <Image source={icon} style={styles.icon} />
+        </View>
+      )}
       <Text style={[styles.buttonText, textStyles]}>{title}</Text>
       {isLoading && (
         <ActivityIndicator
@@ -45,7 +49,7 @@ const CustomButton = ({
 
 const styles = StyleSheet.create({
   buttonContainer: {
-    backgroundColor: "#3461FD", // Secondary color
+    backgroundColor: "#FFFFFF", // Secondary color
     borderRadius: 10, // Rounded corners
     minHeight: 62,
     flexDirection: "row",
@@ -57,7 +61,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    color: "#FFFFFF", // Primary color
+    color: "#AB79FD", // Primary color
     fontFamily: "pbold", // Assuming you have the font configured
     fontSize: 20, // Text size
   },
@@ -73,4 +77,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CustomButton;
+export default IconButton;
