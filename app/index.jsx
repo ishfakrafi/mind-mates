@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { Link, router } from "expo-router";
 import { Image, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CustomButton, IconButton } from "../components";

@@ -9,11 +9,32 @@ import { CustomButton, FormField } from "../../components";
 //import { useGlobalContext } from "../../context/GlobalProvider";
 
 import { auth, provider } from "../../components/firebase-config.js";
-import { signInWithPopup } from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 const SignIn = () => {
-  const signInWithGoogle = async () => {
-    await signInWithPopup(auth, provider);
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
+
+  const handleLogin = () => {
+    const { email, password } = form;
+
+    if (!email || !password) {
+      Alert.alert("Error", "Email and password fields are required.");
+      return;
+    }
+
+    // Firebase sign-in with email and password
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        console.log("User signed in:", userCredential.user);
+        router.push("/home"); // Navigate to the home page after successful login
+      })
+      .catch((error) => {
+        console.error("Error signing in:", error);
+        Alert.alert("Login Error", error.message);
+      });
   };
   return (
     <SafeAreaView className="bg-primary h-full">
@@ -45,7 +66,7 @@ const SignIn = () => {
           <View className="relative mt-5">
             <CustomButton
               title="Login"
-              handlePress={() => router.push("/sign-in")}
+              handlePress={handleLogin}
               width={350}
               marginLeft={18}
               containerStyles={{ marginTop: 16 }}
