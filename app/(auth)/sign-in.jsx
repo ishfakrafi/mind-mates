@@ -8,7 +8,13 @@ import { CustomButton, FormField } from "../../components";
 //import { getCurrentUser, signIn } from "../../lib/appwrite";
 //import { useGlobalContext } from "../../context/GlobalProvider";
 
+import { auth, provider } from "../../components/firebase-config.js";
+import { signInWithPopup } from "firebase/auth";
+
 const SignIn = () => {
+  const signInWithGoogle = async () => {
+    await signInWithPopup(auth, provider);
+  };
   return (
     <SafeAreaView className="bg-primary h-full">
       <ScrollView>
