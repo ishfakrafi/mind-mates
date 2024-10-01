@@ -78,6 +78,9 @@ const SignIn = () => {
               containerStyles={{ marginTop: 16 }}
             />
           </View>
+          <Link href="/profile" className="text-lg font-psemibold">
+            Profile
+          </Link>
         </View>
       </ScrollView>
     </SafeAreaView>

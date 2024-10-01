@@ -35,7 +35,7 @@ const SignUp = () => {
     createUserWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
         console.log("User registered successfully:", userCredential.user);
-        router.push("/home");
+        router.push("/profile");
       })
       .catch((error) => {
         console.error("Error during sign-up:", error);

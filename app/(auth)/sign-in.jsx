@@ -3,11 +3,12 @@ import { Link, router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Text, ScrollView, Dimensions, Alert, Image } from "react-native";
 
+// Add this:
+import { useNavigation } from "@react-navigation/native";
+import { useLayoutEffect } from "react";
+
 import { images } from "../../constants";
 import { CustomButton, FormField } from "../../components";
-//import { getCurrentUser, signIn } from "../../lib/appwrite";
-//import { useGlobalContext } from "../../context/GlobalProvider";
-
 import { auth, provider } from "../../components/firebase-config.js";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
@@ -16,6 +17,12 @@ const SignIn = () => {
     email: "",
     password: "",
   });
+
+  const navigation = useNavigation();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
 
   const handleLogin = () => {
     const { email, password } = form;
@@ -29,13 +36,14 @@ const SignIn = () => {
     signInWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
         console.log("User signed in:", userCredential.user);
-        router.push("/home"); // Navigate to the home page after successful login
+        router.push("/profile"); // Navigate to the home page after successful login
       })
       .catch((error) => {
         console.error("Error signing in:", error);
         Alert.alert("Login Error", error.message);
       });
   };
+
   return (
     <SafeAreaView className="bg-primary h-full">
       <ScrollView>
