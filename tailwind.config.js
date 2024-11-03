@@ -11,6 +11,9 @@ module.exports = {
           200: "#FF8E01",
         },
       },
+      fontSize: {
+        xxs: "4px", // You can define any size here
+      },
     },
   },
   plugins: [],

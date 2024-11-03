@@ -35,6 +35,10 @@ install! 'cocoapods',
 prepare_react_native_project!
 
 target 'project' do
+  pod 'Firebase/Messaging'
+end
+
+target 'project' do
   use_expo_modules!
   config = use_native_modules!
 

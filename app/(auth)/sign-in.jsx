@@ -36,7 +36,9 @@ const SignIn = () => {
     signInWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
         console.log("User signed in:", userCredential.user);
-        router.push("/profile"); // Navigate to the home page after successful login
+        setTimeout(() => {
+          router.push("/profile"); // Slight delay to allow navigation setup
+        }, 500); // Adjust the delay if necessary
       })
       .catch((error) => {
         console.error("Error signing in:", error);

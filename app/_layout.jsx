@@ -2,10 +2,11 @@ import { StyleSheet, Text, View } from "react-native";
 import React, { useEffect } from "react";
 import { Slot, SplashScreen, Stack } from "expo-router";
 import { useFonts } from "expo-font";
+import { AppearanceProvider } from "../app/AppearanceContext";
 
 SplashScreen.preventAutoHideAsync();
 
-const RooyLayout = () => {
+const RootLayout = () => {
   const [fontsLoaded, error] = useFonts({
     mono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
@@ -17,11 +18,18 @@ const RooyLayout = () => {
   }, [fontsLoaded, error]);
 
   if (!fontsLoaded && !error) return null;
+
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-    </Stack>
+    <AppearanceProvider>
+      <Stack>
+        {/* This will act as the root route (i.e., index page) */}
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+
+        {/* Slot allows expo-router to manage nested screens like "/profile" */}
+        <Slot />
+      </Stack>
+    </AppearanceProvider>
   );
 };
 
-export default RooyLayout;
+export default RootLayout;
