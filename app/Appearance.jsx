@@ -1,91 +1,123 @@
-import React, { useContext } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Switch, TouchableOpacity, Alert } from "react-native";
 import Slider from "@react-native-community/slider";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { AppearanceContext } from "../app/AppearanceContext"; // Ensure correct path
+import tw from "tailwind-react-native-classnames";
+import { useNavigation } from "@react-navigation/native";
+import {
+  toggleDarkMode,
+  setBaseFontSize,
+  getThemeConfig,
+  loadThemeConfig,
+  clearThemeConfig,
+} from "../app/themeConfig"; // Ensure the correct path
 
 const AppearanceScreen = () => {
-  const { isDarkMode, setIsDarkMode, textSize, setTextSize } =
-    useContext(AppearanceContext);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [textSize, setTextSize] = useState(16);
 
-  // Toggle dark mode and update context
-  const toggleDarkMode = async () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode); // Update context
-    console.log("Dark mode toggled:", newMode); // Log the new mode value
-    await AsyncStorage.setItem("themeMode", newMode ? "dark" : "light"); // Optional: Save to AsyncStorage
+  // Load theme settings from AsyncStorage on mount
+  useEffect(() => {
+    const initializeTheme = async () => {
+      await loadThemeConfig();
+      //await clearThemeConfig(); //use to update config
+      const config = getThemeConfig();
+      console.log("Loaded theme configuration:", config); // Log to verify colors and theme
+      setIsDarkMode(config.isDarkMode);
+      setTextSize(config.baseFontSize);
+    };
+    initializeTheme();
+  }, []);
+  const navigation = useNavigation();
+  // Toggle dark mode and save to AsyncStorage
+  const handleToggleDarkMode = async () => {
+    toggleDarkMode();
+    const updatedConfig = getThemeConfig();
+    setIsDarkMode(updatedConfig.isDarkMode);
+    console.log("Dark mode toggled:", updatedConfig.isDarkMode);
   };
 
-  // Update text size in context when sliding completes
+  // Update text size and save to AsyncStorage
   const handleTextSizeChangeComplete = async (value) => {
-    setTextSize(value); // Update context
+    setBaseFontSize(value);
+    setTextSize(value);
     console.log("Text size changed to:", value);
-    await AsyncStorage.setItem("textSize", value.toString()); // Optional: Save to AsyncStorage
   };
+
+  // Reset theme settings to defaults
+  const resetPreferences = async () => {
+    try {
+      await AsyncStorage.removeItem("themeConfig");
+      setIsDarkMode(false);
+      setTextSize(16);
+      Alert.alert("Preferences Reset", "Appearance settings have been reset.");
+    } catch (error) {
+      console.log("Failed to reset settings:", error);
+    }
+  };
+
+  const theme = getThemeConfig();
 
   return (
     <View
-      style={{
-        flex: 1,
-        padding: 16,
-        backgroundColor: isDarkMode ? "#333" : "#fff",
-      }}
+      style={[tw`flex-1 p-4`, { backgroundColor: theme.colors.background }]}
     >
-      <Text style={{ fontSize: textSize + 4, fontWeight: "bold" }}>
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={{ padding: 2 }}
+      >
+        <Text style={{ color: theme.colors.accent, fontSize: textSize }}>
+          Back
+        </Text>
+      </TouchableOpacity>
+      <Text
+        style={[
+          tw`font-bold`,
+          { fontSize: textSize + 4, color: theme.colors.heading },
+        ]}
+      >
         Appearance Settings
       </Text>
 
       {/* Dark Mode Toggle */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 20,
-        }}
-      >
-        <Text style={{ fontSize: textSize }}>Dark Mode</Text>
-        <Switch value={isDarkMode} onValueChange={toggleDarkMode} />
+      <View style={tw`flex-row justify-between items-center mb-5`}>
+        <Text style={{ fontSize: textSize, color: theme.colors.textPrimary }}>
+          Dark Mode
+        </Text>
+        <Switch value={isDarkMode} onValueChange={handleToggleDarkMode} />
       </View>
 
       {/* Text Size Adjustment */}
-      <View style={{ marginBottom: 20 }}>
-        <Text style={{ fontSize: textSize }}>Text Size</Text>
+      <View style={tw`mb-5`}>
+        <Text style={{ fontSize: textSize, color: theme.colors.textPrimary }}>
+          Text Size
+        </Text>
         <Slider
           minimumValue={12}
           maximumValue={24}
           value={textSize}
-          onSlidingComplete={handleTextSizeChangeComplete} // Only update on complete
+          onSlidingComplete={handleTextSizeChangeComplete}
         />
-        <Text style={{ textAlign: "center", fontSize: textSize }}>
+        <Text
+          style={{
+            textAlign: "center",
+            fontSize: textSize,
+            color: theme.colors.textSecondary,
+          }}
+        >
           {textSize.toFixed(0)}
         </Text>
       </View>
 
       {/* Reset Button */}
       <TouchableOpacity
-        style={{
-          padding: 12,
-          backgroundColor: "gray",
-          alignItems: "center",
-          borderRadius: 8,
-        }}
-        onPress={async () => {
-          try {
-            await AsyncStorage.removeItem("themeMode");
-            await AsyncStorage.removeItem("textSize");
-            setIsDarkMode(false); // Reset to default
-            setTextSize(16); // Reset to default
-            Alert.alert(
-              "Preferences Reset",
-              "Appearance settings have been reset."
-            );
-          } catch (error) {
-            console.log("Failed to reset settings:", error);
-          }
-        }}
+        style={[
+          tw`p-3 items-center rounded-lg`,
+          { backgroundColor: theme.colors.accent },
+        ]}
+        onPress={resetPreferences}
       >
-        <Text style={{ color: "#fff" }}>Reset Preferences</Text>
+        <Text style={{ color: theme.colors.cswhite }}>Reset Preferences</Text>
       </TouchableOpacity>
     </View>
   );

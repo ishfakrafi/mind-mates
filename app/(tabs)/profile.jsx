@@ -1,12 +1,4 @@
-// Profile.jsx
-
-import {
-  useState,
-  useEffect,
-  createContext,
-  useContext,
-  useCallback,
-} from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -25,23 +17,15 @@ import TopBar from "../src/TopBar";
 import { useNavigation } from "@react-navigation/native";
 import { icons } from "../../constants";
 import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
-import { AppearanceContext, AppearanceProvider } from "../AppearanceContext"; // Ensure the correct path
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { loadThemeConfig, getThemeConfig } from "../themeConfig"; // Ensure correct path
 
 const Profile = () => {
   const navigation = useNavigation();
-  let appearanceContextValues;
 
-  try {
-    appearanceContextValues = useContext(AppearanceContext);
-    console.log("Profile screen context values:", appearanceContextValues);
-  } catch (error) {
-    console.error("Error accessing AppearanceContext in Profile:", error);
-    appearanceContextValues = { isDarkMode: false, textSize: 16 }; // Fallback values
-  }
-
-  const { isDarkMode, textSize } = appearanceContextValues;
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [textSize, setTextSize] = useState(16);
 
   const [isNotificationEnabled, setIsNotificationEnabled] = useState(false);
   const [user, setUser] = useState({
@@ -53,9 +37,12 @@ const Profile = () => {
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [translatedText, setTranslatedText] = useState({});
 
+  const theme = getThemeConfig(); // Get the theme configuration, including colors
+
   const apiKey = "c4601f1be388488aa7433f305ff71533";
   const apiRegion = "australiaeast";
 
+  // Function to translate text
   const translateText = async (text) => {
     try {
       const response = await axios.post(
@@ -76,6 +63,25 @@ const Profile = () => {
     }
   };
 
+  useFocusEffect(
+    React.useCallback(() => {
+      const initializeTheme = async () => {
+        await loadThemeConfig(); // Load saved theme config from AsyncStorage
+        const config = getThemeConfig();
+        setIsDarkMode(config.isDarkMode);
+        setTextSize(config.baseFontSize);
+      };
+
+      initializeTheme();
+    }, [])
+  );
+
+  useEffect(() => {
+    console.log("Dark mode:", isDarkMode);
+    console.log("Text size:", textSize);
+  }, [isDarkMode, textSize]);
+
+  // Load user data
   useEffect(() => {
     const currentUser = auth.currentUser;
     if (currentUser) {
@@ -90,6 +96,7 @@ const Profile = () => {
     }
   }, []);
 
+  // Load translations based on selected language and user data
   useEffect(() => {
     const loadTranslations = async () => {
       const translations = {
@@ -121,6 +128,7 @@ const Profile = () => {
     loadTranslations();
   }, [selectedLanguage, user.displayName]);
 
+  // Handle notification permissions
   const requestNotificationPermissions = async () => {
     const isEnabled = !isNotificationEnabled;
     setIsNotificationEnabled(isEnabled);
@@ -135,6 +143,7 @@ const Profile = () => {
     }
   };
 
+  // Handle photo change
   const handlePhotoChange = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -232,7 +241,7 @@ const Profile = () => {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: isDarkMode ? "#333" : "#fff" }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <TopBar
         firstName={firstName}
         selectedLanguage={selectedLanguage}
@@ -253,7 +262,7 @@ const Profile = () => {
                   position: "absolute",
                   right: 0,
                   bottom: 0,
-                  backgroundColor: "#fff",
+                  backgroundColor: theme.colors.cswhite,
                   borderRadius: 50,
                   padding: 5,
                 }}
@@ -266,26 +275,40 @@ const Profile = () => {
               </TouchableOpacity>
             </View>
             <View style={{ marginLeft: 16 }}>
-              <Text style={{ fontSize: textSize, fontWeight: "bold" }}>
+              <Text
+                style={{
+                  fontSize: textSize,
+                  fontWeight: "bold",
+                  color: theme.colors.heading,
+                }}
+              >
                 {translatedText.userName || `${user.displayName}`}
               </Text>
-              <Text style={{ fontSize: textSize - 2, color: "gray" }}>
+              <Text
+                style={{
+                  fontSize: textSize - 2,
+                  color: theme.colors.textSecondary,
+                }}
+              >
                 {user.email}
               </Text>
             </View>
           </View>
 
+          {/* Notification Switch */}
           <View
             style={{
               padding: 16,
               borderBottomWidth: 1,
-              borderBottomColor: "gray",
+              borderBottomColor: theme.colors.divider,
               flexDirection: "row",
               justifyContent: "space-between",
               alignItems: "center",
             }}
           >
-            <Text style={{ fontSize: textSize }}>
+            <Text
+              style={{ fontSize: textSize, color: theme.colors.textPrimary }}
+            >
               {translatedText.notification || "Notification"}
             </Text>
             <Switch
@@ -294,54 +317,64 @@ const Profile = () => {
             />
           </View>
 
+          {/* Privacy and Security */}
           <TouchableOpacity onPress={handlePrivacyStatement}>
             <View
               style={{
                 padding: 16,
                 borderBottomWidth: 1,
-                borderBottomColor: "gray",
+                borderBottomColor: theme.colors.divider,
               }}
             >
-              <Text style={{ fontSize: textSize }}>
+              <Text
+                style={{ fontSize: textSize, color: theme.colors.textPrimary }}
+              >
                 {translatedText.privacy || "Privacy and Security"}
               </Text>
             </View>
           </TouchableOpacity>
 
+          {/* Appearance */}
           <TouchableOpacity onPress={handleAppearance}>
             <View
               style={{
                 padding: 16,
                 borderBottomWidth: 1,
-                borderBottomColor: "gray",
+                borderBottomColor: theme.colors.divider,
               }}
             >
-              <Text style={{ fontSize: textSize }}>
+              <Text
+                style={{ fontSize: textSize, color: theme.colors.textPrimary }}
+              >
                 {translatedText.appearance || "Appearance"}
               </Text>
             </View>
           </TouchableOpacity>
 
+          {/* Log Out */}
           <TouchableOpacity onPress={handleLogout}>
             <View
               style={{
                 padding: 16,
                 borderBottomWidth: 1,
-                borderBottomColor: "gray",
+                borderBottomColor: theme.colors.divider,
               }}
             >
-              <Text style={{ fontSize: textSize }}>
+              <Text
+                style={{ fontSize: textSize, color: theme.colors.textPrimary }}
+              >
                 {translatedText.logout || "Log out"}
               </Text>
             </View>
           </TouchableOpacity>
 
+          {/* Delete Account */}
           <TouchableOpacity onPress={handleDeleteAccount}>
-            <View style={{ padding: 16, backgroundColor: "red" }}>
+            <View style={{ padding: 16, backgroundColor: theme.colors.danger }}>
               <Text
                 style={{
                   fontSize: textSize,
-                  color: "white",
+                  color: theme.colors.cswhite,
                   textAlign: "center",
                 }}
               >

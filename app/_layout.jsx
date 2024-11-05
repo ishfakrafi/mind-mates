@@ -24,9 +24,6 @@ const RootLayout = () => {
       <Stack>
         {/* This will act as the root route (i.e., index page) */}
         <Stack.Screen name="index" options={{ headerShown: false }} />
-
-        {/* Slot allows expo-router to manage nested screens like "/profile" */}
-        <Slot />
       </Stack>
     </AppearanceProvider>
   );

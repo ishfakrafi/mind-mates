@@ -1,12 +1,5 @@
-import React, { useState } from "react";
-import {
-  View,
-  ScrollView,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-} from "react-native";
+import React, { useRef, useState, useEffect } from "react";
+import { View, ScrollView, Text, Image, TouchableOpacity } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import SearchBar from "../../components/SearchBar";
 import TopBar from "../src/TopBar";
@@ -16,34 +9,265 @@ import ActivityTab from "../../components/ActivityTab";
 import ReadingTab from "../../components/ReadingTab";
 import FaqTab from "../../components/FaqTab";
 import DASS21Screen from "../../components/dass21Screen";
+import Reading1 from "../../components/Reading1";
 import { BoxBreathe } from "../../components/BoxBreathing";
+import { useFocusEffect } from "@react-navigation/native";
+import { loadThemeConfig, getThemeConfig } from "../themeConfig";
+import { auth } from "../../components/firebase-config";
+import axios from "axios";
+
+const apiKey = "c4601f1be388488aa7433f305ff71533";
+const apiRegion = "australiaeast";
+
+// Function to translate text using Azure Translator API
+const translateText = async (text, language) => {
+  try {
+    const response = await axios.post(
+      `https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=${language}`,
+      [{ text }],
+      {
+        headers: {
+          "Ocp-Apim-Subscription-Key": apiKey,
+          "Ocp-Apim-Subscription-Region": apiRegion,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data[0]?.translations[0]?.text || text;
+  } catch (error) {
+    console.error("Error translating text:", error);
+    return text;
+  }
+};
 
 export default function ExploreScreen() {
   const [selectedTab, setSelectedTab] = useState("Assessment");
-  const [view, setView] = useState("default"); // To track if it's full-page view
+  const [view, setView] = useState("default");
+  const [firstName, setFirstName] = useState("User");
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [theme, setTheme] = useState({
+    colors: {},
+    fontSizes: {},
+    baseFontSize: 16,
+  });
+  // Refs for each tab to scroll to the correct item
+  const assessmentRef = useRef(null);
+  const activityRef = useRef(null);
+  const readingRef = useRef(null);
+  const faqRef = useRef(null);
 
-  // Function to render content based on the selected tab or full-screen view
+  // In ExploreScreen.js
+
+  const handleSelectSuggestion = (item) => {
+    if (item.id === "DASS21") {
+      setSelectedTab("Assessment"); // Switch to the relevant tab if necessary
+      setView("DASS21"); // Open the DASS21 component
+    } else if (item.id === "Box Breathing") {
+      setSelectedTab("Activity"); // Switch to the relevant tab if necessary
+      setView("Box"); // Open the Box Breathing component
+    } else if (item.id === "Reading1") {
+      setSelectedTab("Reading"); // Switch to the Reading tab if necessary
+      setView("Reading1"); // Open the Reading1 component
+    } else if (item.id.startsWith("FAQ")) {
+      setSelectedTab("Faq"); // Switch to the FAQ tab if necessary
+      // You can add more logic here if needed to open specific FAQs
+    }
+  };
+
+  const textSize = theme.baseFontSize || 16;
+  const originalQuotes = [
+    "Believe in yourself!",
+    "You are stronger than you think.",
+    "One step at a time.",
+    "Progress, not perfection.",
+    "Every day is a new beginning.",
+  ];
+
+  const [currentQuote, setCurrentQuote] = useState("");
+  const [quoteIndex, setQuoteIndex] = useState(0);
+  const [typing, setTyping] = useState(true);
+  const [translatedText, setTranslatedText] = useState({
+    assessment: "Assessment",
+    activity: "Activity",
+    reading: "Reading",
+    faq: "Faq",
+    motivationalQuotes: originalQuotes,
+    close: "Close",
+    assessmentTitle: "Assessment: .DASS. 21",
+    boxTitle: "Activity: Box Breathing",
+  });
+
+  useEffect(() => {
+    let typingInterval;
+    let deleteInterval;
+
+    if (
+      typing &&
+      currentQuote.length < translatedText.motivationalQuotes[quoteIndex].length
+    ) {
+      typingInterval = setInterval(() => {
+        setCurrentQuote(
+          (prev) =>
+            prev + translatedText.motivationalQuotes[quoteIndex][prev.length]
+        );
+      }, 100);
+    } else if (!typing && currentQuote.length > 0) {
+      deleteInterval = setInterval(() => {
+        setCurrentQuote((prev) => prev.slice(0, -1));
+      }, 50);
+    } else if (
+      typing &&
+      currentQuote.length ===
+        translatedText.motivationalQuotes[quoteIndex].length
+    ) {
+      setTimeout(() => setTyping(false), 2000); // Pause before deleting
+    } else if (!typing && currentQuote.length === 0) {
+      setQuoteIndex(
+        (prevIndex) =>
+          (prevIndex + 1) % translatedText.motivationalQuotes.length
+      ); // Move to next quote
+      setTyping(true);
+    }
+
+    return () => {
+      clearInterval(typingInterval);
+      clearInterval(deleteInterval);
+    };
+  }, [typing, currentQuote, quoteIndex, translatedText]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadThemeAndUser = async () => {
+        await loadThemeConfig();
+        const config = getThemeConfig();
+        setTheme(config || {});
+
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          const displayName = currentUser.displayName || "User";
+          setFirstName(displayName.split(" ")[0]);
+        }
+      };
+
+      loadThemeAndUser();
+    }, [])
+  );
+
+  // Load translations whenever the language is changed
+  useEffect(() => {
+    const loadTranslations = async () => {
+      const newTranslatedText = {
+        assessment: await translateText("Assessment", selectedLanguage),
+        activity: await translateText("Activity", selectedLanguage),
+        reading: await translateText("Reading", selectedLanguage),
+        faq: await translateText("Faq", selectedLanguage),
+        close: await translateText("Close", selectedLanguage),
+        assessmentTitle: await translateText(
+          "Assessment: .DASS. 21",
+          selectedLanguage
+        ),
+        boxTitle: await translateText(
+          "Activity: Box Breathing",
+          selectedLanguage
+        ),
+      };
+
+      const translatedQuotes = await Promise.all(
+        originalQuotes.map((quote) => translateText(quote, selectedLanguage))
+      );
+      newTranslatedText.motivationalQuotes = translatedQuotes;
+
+      setTranslatedText(newTranslatedText);
+    };
+
+    loadTranslations();
+  }, [selectedLanguage]);
+
   const renderTabContent = () => {
     if (view === "DASS21") {
       return (
         <View style={tw`flex-1`}>
-          <View style={tw`flex-row justify-between p-8 bg-white`}>
-            <Text style={tw`font-bold text-lg`}>Assessment: DASS 21</Text>
+          <View
+            style={[
+              tw`flex-row justify-between p-8`,
+              { backgroundColor: theme.colors.background || "#FFFFFF" },
+            ]}
+          >
+            <Text
+              style={[
+                tw`font-bold`,
+                {
+                  fontSize: textSize + 2,
+                  color: theme.colors.textPrimary || "#333",
+                },
+              ]}
+            >
+              {translatedText.assessmentTitle}
+            </Text>
             <TouchableOpacity onPress={() => setView("default")}>
-              <Text style={tw`text-blue-500`}>Close</Text>
+              <Text style={{ color: theme.colors.accent || "#6200EE" }}>
+                {translatedText.close}
+              </Text>
             </TouchableOpacity>
           </View>
-          <DASS21Screen />
+          <DASS21Screen selectedLanguage={selectedLanguage} />
+        </View>
+      );
+    }
+    if (view === "READING1") {
+      return (
+        <View style={tw`flex-1`}>
+          <View
+            style={[
+              tw`flex-row justify-between p-8`,
+              { backgroundColor: theme.colors.background || "#FFFFFF" },
+            ]}
+          >
+            <Text
+              style={[
+                tw`font-bold`,
+                {
+                  fontSize: textSize + 2,
+                  color: theme.colors.textPrimary || "#333",
+                },
+              ]}
+            >
+              {translatedText.assessmentTitle}
+            </Text>
+            <TouchableOpacity onPress={() => setView("default")}>
+              <Text style={{ color: theme.colors.accent || "#6200EE" }}>
+                {translatedText.close}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <Reading1 selectedLanguage={selectedLanguage} />
         </View>
       );
     }
     if (view === "Box") {
       return (
         <View style={tw`flex-1`}>
-          <View style={tw`flex-row justify-between p-4 bg-white`}>
-            <Text style={tw`font-bold text-lg`}>Activity: Box Breathing</Text>
+          <View
+            style={[
+              tw`flex-row justify-between p-4`,
+              { backgroundColor: theme.colors.background || "#FFFFFF" },
+            ]}
+          >
+            <Text
+              style={[
+                tw`font-bold`,
+                {
+                  fontSize: textSize + 2,
+                  color: theme.colors.textPrimary || "#333",
+                },
+              ]}
+            >
+              {translatedText.boxTitle}
+            </Text>
             <TouchableOpacity onPress={() => setView("default")}>
-              <Text style={tw`text-blue-500`}>Close</Text>
+              <Text style={{ color: theme.colors.accent || "#6200EE" }}>
+                {translatedText.close}
+              </Text>
             </TouchableOpacity>
           </View>
           <BoxBreathe />
@@ -53,219 +277,127 @@ export default function ExploreScreen() {
 
     switch (selectedTab) {
       case "Assessment":
-        return <AssessmentTab setView={setView} />; // Pass setView to switch to full-screen
+        return (
+          <AssessmentTab
+            setView={setView}
+            view={view}
+            selectedLanguage={selectedLanguage}
+            setSelectedLanguage={setSelectedLanguage}
+          />
+        );
       case "Activity":
-        return <ActivityTab setView={setView} />;
+        return (
+          <ActivityTab
+            setView={setView}
+            selectedLanguage={selectedLanguage}
+            setSelectedLanguage={setSelectedLanguage}
+          />
+        );
       case "Reading":
-        return <ReadingTab />;
+        return (
+          <ReadingTab
+            setView={setView}
+            selectedLanguage={selectedLanguage}
+            setSelectedLanguage={setSelectedLanguage}
+          />
+        );
       case "Faq":
-        return <FaqTab />;
+        return (
+          <FaqTab
+            setView={setView}
+            selectedLanguage={selectedLanguage}
+            setSelectedLanguage={setSelectedLanguage}
+          />
+        );
       default:
-        return <AssessmentTab setView={setView} />; // Default to AssessmentTab
+        return <AssessmentTab setView={setView} />;
     }
   };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ScrollView style={tw`flex-1`} contentContainerStyle={tw`flex-col gap-4`}>
+      <ScrollView
+        style={[
+          tw`flex-1`,
+          { backgroundColor: theme.colors.background || "#FFFFFF" },
+        ]}
+        contentContainerStyle={tw`flex-col`}
+      >
         {view === "default" && (
           <>
-            <TopBar />
-            <SearchBar />
+            <TopBar
+              firstName={firstName}
+              selectedLanguage={selectedLanguage}
+              setSelectedLanguage={setSelectedLanguage}
+            />
+            <SearchBar onSelectSuggestion={handleSelectSuggestion} />
+
             <View
               style={[
-                tw`flex flex-row w-full mt-8 items-start justify-end gap-4 px-6 py-2 rounded-[10px]`,
-                { backgroundColor: "#fcdae8" },
-                { borderRadius: 30 },
+                tw`flex flex-row w-full mt-8 items-start justify-end px-6 py-2`,
+                {
+                  backgroundColor: "#fcdae8" || "#fcdae8",
+                  borderRadius: 30,
+                },
               ]}
             >
               <Image
                 source={require("../../assets/images/Sitting.png")}
-                style={[tw`w-[135px] h-[193px]`, { marginTop: -20 }]}
+                style={[{ marginTop: -20 }]}
               />
-              <View style={tw`flex flex-col w-[216px] bg-[#fddae9] p-4`}>
-                <View
-                  style={[
-                    tw`flex flex-col bg-white p-4 rounded-[15px]`,
-                    { borderRadius: 15 },
-                  ]}
-                >
-                  <Text
-                    style={[tw`font-semibold text-xs`, { color: "#0c7c5b" }]}
-                  >
-                    Mood Boosters
-                  </Text>
 
-                  <View style={tw`flex-row justify-between`}>
-                    <Text
-                      style={[
-                        tw`font-semibold`,
-                        { color: "#373737" },
-                        { fontSize: "10px" },
-                      ]}
-                    >
-                      Activity: Breathe
-                    </Text>
-                    <Text
-                      style={[
-                        tw`font-semibold`,
-                        { color: "#0ad89a" },
-                        { fontSize: "10px" },
-                      ]}
-                    >
-                      +2%
-                    </Text>
-                  </View>
-                  <View style={tw`flex-row justify-between`}>
-                    <Text
-                      style={[
-                        tw`font-semibold`,
-                        { color: "#373737" },
-                        { fontSize: "10px" },
-                      ]}
-                    >
-                      Activity: Meditation
-                    </Text>
-                    <Text
-                      style={[
-                        tw`font-semibold`,
-                        { color: "#0ad89a" },
-                        { fontSize: "10px" },
-                      ]}
-                    >
-                      +4%
-                    </Text>
-                  </View>
-                  <View style={tw`flex-row justify-between`}>
-                    <Text
-                      style={[
-                        tw`font-semibold`,
-                        { color: "#373737" },
-                        { fontSize: "10px" },
-                      ]}
-                    >
-                      Reading: Mental Wellness
-                    </Text>
-                    <Text
-                      style={[
-                        tw`font-semibold`,
-                        { color: "#0ad89a" },
-                        { fontSize: "10px" },
-                      ]}
-                    >
-                      +6%
-                    </Text>
-                  </View>
-                </View>
-
-                <View
-                  style={[
-                    tw`flex flex-col bg-white p-4 mt-4 rounded-[15px]`,
-                    { borderRadius: 15 },
-                  ]}
+              <View style={[tw`p-4`, { width: 180, alignSelf: "flex-start" }]}>
+                <Text
+                  style={{
+                    color: "#2C2C2E" || "#333",
+                    fontSize: textSize,
+                    textAlign: "center",
+                  }}
+                  numberOfLines={3} // Limit to 3 lines to avoid overflow
                 >
-                  <View style={tw`flex flex-row justify-between`}>
-                    <Text style={tw`font-semibold text-black text-xs`}>
-                      Mood Optimization
-                    </Text>
-                    <Text
-                      style={[
-                        tw`font-semibold`,
-                        { color: "#0ad89a" },
-                        { fontSize: "10px" },
-                      ]}
-                    >
-                      60%
-                    </Text>
-                  </View>
-                  <View style={tw`bg-gray-300 rounded-[10px] h-2 mt-2`}>
-                    <View
-                      style={tw`bg-[#b488fb] h-full w-[80%] rounded-[10px]`}
-                    />
-                  </View>
-                </View>
+                  {currentQuote ||
+                    translatedText.motivationalQuotes[quoteIndex]}
+                </Text>
               </View>
             </View>
 
-            <View
-              style={tw`flex flex-col w-full items-start justify-end gap-4`}
-            >
+            <View style={tw`flex flex-col w-full items-start justify-end`}>
               <View
-                style={tw`flex flex-row w-full items-center justify-around p-4 rounded-[10px]`}
+                style={tw`flex flex-row w-full items-center justify-around p-4`}
               >
-                <TouchableOpacity
-                  style={[
-                    tw`w-[91px] h-8 bg-primary px-4 rounded-xl items-center justify-center`,
-                    selectedTab === "Assessment"
-                      ? { backgroundColor: "#ac7afd" }
-                      : { backgroundColor: "#f0f0f0" },
-                  ]}
-                  onPress={() => setSelectedTab("Assessment")}
-                >
-                  <Text
-                    style={tw`text-xs font-semibold ${
-                      selectedTab === "Assessment"
-                        ? "text-white"
-                        : "text-gray-500"
-                    }`}
-                  >
-                    Assessment
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    tw`w-[66px] h-8 bg-white px-4 rounded-xl items-center justify-center`,
-                    selectedTab === "Activity"
-                      ? { backgroundColor: "#ac7afd" }
-                      : { backgroundColor: "#f0f0f0" },
-                  ]}
-                  onPress={() => setSelectedTab("Activity")}
-                >
-                  <Text
-                    style={tw`text-xs font-semibold ${
-                      selectedTab === "Activity"
-                        ? "text-white"
-                        : "text-gray-500"
-                    }`}
-                  >
-                    Activity
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    tw`w-[66px] h-8 bg-white px-4 rounded-xl items-center justify-center`,
-                    selectedTab === "Reading"
-                      ? { backgroundColor: "#ac7afd" }
-                      : { backgroundColor: "#f0f0f0" },
-                  ]}
-                  onPress={() => setSelectedTab("Reading")}
-                >
-                  <Text
-                    style={tw`text-xs font-semibold ${
-                      selectedTab === "Reading" ? "text-white" : "text-gray-500"
-                    }`}
-                  >
-                    Reading
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    tw`w-[46px] h-8 bg-white px-4 rounded-xl items-center justify-center`,
-                    selectedTab === "Faq"
-                      ? { backgroundColor: "#ac7afd" }
-                      : { backgroundColor: "#f0f0f0" },
-                  ]}
-                  onPress={() => setSelectedTab("Faq")}
-                >
-                  <Text
-                    style={tw`text-xs font-semibold ${
-                      selectedTab === "Faq" ? "text-white" : "text-gray-500"
-                    }`}
-                  >
-                    Faq
-                  </Text>
-                </TouchableOpacity>
+                {["Assessment", "Activity", "Reading", "Faq"].map(
+                  (tab, index) => (
+                    <TouchableOpacity
+                      key={tab}
+                      style={[
+                        tw`h-8 px-4 rounded-xl items-center justify-center`,
+                        selectedTab === tab
+                          ? {
+                              backgroundColor: theme.colors.accent || "#ac7afd",
+                            }
+                          : {
+                              backgroundColor:
+                                theme.colors.background || "#f0f0f0",
+                            },
+                      ]}
+                      onPress={() => setSelectedTab(tab)}
+                    >
+                      <Text
+                        style={[
+                          tw`text-xs font-semibold`,
+                          {
+                            color:
+                              selectedTab === tab
+                                ? theme.colors.cswhite
+                                : theme.colors.textSecondary,
+                          },
+                        ]}
+                      >
+                        {translatedText[tab.toLowerCase()]}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                )}
               </View>
             </View>
           </>

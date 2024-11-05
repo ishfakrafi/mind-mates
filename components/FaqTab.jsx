@@ -1,7 +1,141 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import tw from "tailwind-react-native-classnames";
+import { loadThemeConfig, getThemeConfig } from "../app/themeConfig";
+import { useFocusEffect } from "@react-navigation/native";
+import axios from "axios";
 
+// Constants for the translation API and caching
+const apiKey = "c4601f1be388488aa7433f305ff71533";
+const apiRegion = "australiaeast";
+const translationCache = {};
+
+const translateText = async (text, language) => {
+  if (language === "en") return text;
+
+  if (translationCache[language] && translationCache[language][text]) {
+    return translationCache[language][text];
+  }
+
+  try {
+    const response = await axios.post(
+      `https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=${language}`,
+      [{ text }],
+      {
+        headers: {
+          "Ocp-Apim-Subscription-Key": apiKey,
+          "Ocp-Apim-Subscription-Region": apiRegion,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const translatedText = response.data[0]?.translations[0]?.text || text;
+
+    if (!translationCache[language]) {
+      translationCache[language] = {};
+    }
+    translationCache[language][text] = translatedText;
+
+    return translatedText;
+  } catch (error) {
+    console.error("Error translating text:", error);
+    return text;
+  }
+};
+
+const FaqTab = ({ selectedLanguage }) => {
+  const [theme, setTheme] = useState({
+    colors: {},
+    fontSizes: {},
+    baseFontSize: 16,
+  });
+  const textSize = theme.baseFontSize || 16;
+
+  const [expandedIndex, setExpandedIndex] = useState(null);
+  const [translatedFaqData, setTranslatedFaqData] = useState([]);
+
+  // Load theme and translations
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadThemeAndTranslations = async () => {
+        await loadThemeConfig();
+        const config = getThemeConfig();
+        setTheme(config || {});
+
+        const newTranslatedFaqData = await Promise.all(
+          faqData.map(async (faq) => ({
+            question: await translateText(faq.question, selectedLanguage),
+            answer: await translateText(faq.answer, selectedLanguage),
+          }))
+        );
+
+        setTranslatedFaqData(newTranslatedFaqData);
+      };
+
+      loadThemeAndTranslations();
+    }, [selectedLanguage])
+  );
+
+  const toggleExpand = (index) => {
+    setExpandedIndex(expandedIndex === index ? null : index);
+  };
+
+  return (
+    <ScrollView vertical style={tw`flex flex-col w-full`}>
+      {translatedFaqData.map((faq, index) => (
+        <View
+          key={index}
+          style={[
+            tw`p-4 mb-4`,
+            {
+              backgroundColor: theme.colors.secondaryBackground || "#FFFFFF",
+              borderRadius: 25,
+            },
+          ]}
+        >
+          <TouchableOpacity onPress={() => toggleExpand(index)}>
+            <View style={tw`flex-row justify-between items-center`}>
+              <Text
+                style={{
+                  color: theme.colors.textPrimary || "black",
+                  fontSize: textSize,
+                  fontWeight: "600",
+                }}
+              >
+                {faq.question}
+              </Text>
+              <Text
+                style={{
+                  color: theme.colors.textPrimary || "black",
+                  fontSize: textSize,
+                  fontWeight: "bold",
+                }}
+              >
+                {expandedIndex === index ? "-" : "+"}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {expandedIndex === index && (
+            <View style={tw`mt-2`}>
+              <Text
+                style={{
+                  color: theme.colors.textSecondary || "#666",
+                  fontSize: textSize - 2,
+                }}
+              >
+                {faq.answer}
+              </Text>
+            </View>
+          )}
+        </View>
+      ))}
+    </ScrollView>
+  );
+};
+
+// FAQ data
 const faqData = [
   {
     question: "What is mental health?",
@@ -84,45 +218,5 @@ const faqData = [
       "Yes, it's normal to feel overwhelmed, especially during stressful periods. If the feeling persists, it can be helpful to practice self-care, set boundaries, and seek professional help if necessary.",
   },
 ];
-
-const FaqTab = () => {
-  const [expandedIndex, setExpandedIndex] = useState(null);
-
-  const toggleExpand = (index) => {
-    if (expandedIndex === index) {
-      setExpandedIndex(null); // Collapse if clicked again
-    } else {
-      setExpandedIndex(index); // Expand the clicked question
-    }
-  };
-
-  return (
-    <ScrollView vertical style={tw`flex flex-col w-full`}>
-      {faqData.map((faq, index) => (
-        <View
-          key={index}
-          style={[tw`bg-white p-4 mb-4 rounded-[25px]`, { borderRadius: "25" }]}
-        >
-          <TouchableOpacity onPress={() => toggleExpand(index)}>
-            <View style={tw`flex-row justify-between items-center`}>
-              <Text style={tw`text-black font-semibold text-sm`}>
-                {faq.question}
-              </Text>
-              <Text style={tw`text-black font-bold`}>
-                {expandedIndex === index ? "-" : "+"}
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          {expandedIndex === index && (
-            <View style={tw`mt-2`}>
-              <Text style={tw`text-gray-500 text-sm`}>{faq.answer}</Text>
-            </View>
-          )}
-        </View>
-      ))}
-    </ScrollView>
-  );
-};
 
 export default FaqTab;

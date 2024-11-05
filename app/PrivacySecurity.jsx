@@ -14,8 +14,10 @@ import {
   reauthenticateWithCredential,
 } from "firebase/auth";
 import { auth } from "../components/firebase-config"; // Make sure this is the correct path
-
+import { loadThemeConfig, getThemeConfig } from "../app/themeConfig"; // Import themeConfig
+import { useNavigation } from "@react-navigation/native";
 const PrivacySecurity = () => {
+  const navigation = useNavigation();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
 
@@ -24,6 +26,8 @@ const PrivacySecurity = () => {
   const [newPassword, setNewPassword] = useState("");
   const [retypeNewPassword, setRetypeNewPassword] = useState("");
 
+  const theme = getThemeConfig();
+  const textSize = theme.baseFontSize;
   // Check if displayName exists, and split if it's valid
   useEffect(() => {
     if (auth.currentUser?.displayName) {
@@ -82,33 +86,61 @@ const PrivacySecurity = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 20 }}>
-      <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
+    <ScrollView
+      contentContainerStyle={{
+        padding: 20,
+        backgroundColor: theme.colors.background,
+      }}
+    >
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={{ padding: 10 }}
+      >
+        <Text style={{ color: theme.colors.accent, fontSize: textSize }}>
+          Back
+        </Text>
+      </TouchableOpacity>
+      <Text
+        style={{
+          fontSize: textSize + 2,
+          fontWeight: "bold",
+          color: theme.colors.heading,
+          marginBottom: 10,
+        }}
+      >
         Privacy and Security
       </Text>
 
       {/* User details form */}
-      <Text>First Name</Text>
+      <Text style={{ color: theme.colors.textPrimary, fontSize: textSize }}>
+        First Name
+      </Text>
       <TextInput
         value={firstName}
         onChangeText={(text) => setFirstName(text)}
         style={{
-          borderColor: "gray",
+          borderColor: theme.colors.divider,
           borderWidth: 1,
           marginBottom: 10,
           padding: 8,
+          color: theme.colors.textPrimary,
+          backgroundColor: theme.colors.background,
         }}
       />
 
-      <Text>Last Name</Text>
+      <Text style={{ color: theme.colors.textPrimary, fontSize: textSize }}>
+        Last Name
+      </Text>
       <TextInput
         value={lastName}
         onChangeText={(text) => setLastName(text)}
         style={{
-          borderColor: "gray",
+          borderColor: theme.colors.divider,
           borderWidth: 1,
           marginBottom: 10,
           padding: 8,
+          color: theme.colors.textPrimary,
+          backgroundColor: theme.colors.background,
         }}
       />
 
@@ -116,55 +148,76 @@ const PrivacySecurity = () => {
         <View
           style={{
             padding: 10,
-            backgroundColor: "blue",
+            backgroundColor: theme.colors.accent,
             borderRadius: 5,
             alignItems: "center",
           }}
         >
-          <Text style={{ color: "white" }}>Save Details</Text>
+          <Text style={{ color: theme.colors.cswhite, fontSize: textSize }}>
+            Save Details
+          </Text>
         </View>
       </TouchableOpacity>
 
       {/* Password change form */}
-      <Text style={{ fontSize: 18, fontWeight: "bold", marginTop: 20 }}>
+      <Text
+        style={{
+          fontSize: textSize + 2,
+          fontWeight: "bold",
+          color: theme.colors.heading,
+          marginTop: 20,
+        }}
+      >
         Change Password
       </Text>
 
-      <Text>Old Password</Text>
+      <Text style={{ color: theme.colors.textPrimary, fontSize: textSize }}>
+        Old Password
+      </Text>
       <TextInput
         value={oldPassword}
         onChangeText={(text) => setOldPassword(text)}
         style={{
-          borderColor: "gray",
+          borderColor: theme.colors.divider,
           borderWidth: 1,
           marginBottom: 10,
           padding: 8,
+          color: theme.colors.textPrimary,
+          backgroundColor: theme.colors.background,
         }}
         secureTextEntry
       />
 
-      <Text>New Password</Text>
+      <Text style={{ color: theme.colors.textPrimary, fontSize: textSize }}>
+        New Password
+      </Text>
       <TextInput
         value={newPassword}
         onChangeText={(text) => setNewPassword(text)}
         style={{
-          borderColor: "gray",
+          borderColor: theme.colors.divider,
           borderWidth: 1,
           marginBottom: 10,
           padding: 8,
+          color: theme.colors.textPrimary,
+          backgroundColor: theme.colors.background,
         }}
         secureTextEntry
       />
 
-      <Text>Retype New Password</Text>
+      <Text style={{ color: theme.colors.textPrimary, fontSize: textSize }}>
+        Retype New Password
+      </Text>
       <TextInput
         value={retypeNewPassword}
         onChangeText={(text) => setRetypeNewPassword(text)}
         style={{
-          borderColor: "gray",
+          borderColor: theme.colors.divider,
           borderWidth: 1,
           marginBottom: 10,
           padding: 8,
+          color: theme.colors.textPrimary,
+          backgroundColor: theme.colors.background,
         }}
         secureTextEntry
       />
@@ -173,12 +226,14 @@ const PrivacySecurity = () => {
         <View
           style={{
             padding: 10,
-            backgroundColor: "green",
+            backgroundColor: theme.colors.success,
             borderRadius: 5,
             alignItems: "center",
           }}
         >
-          <Text style={{ color: "white" }}>Change Password</Text>
+          <Text style={{ color: theme.colors.cswhite, fontSize: textSize }}>
+            Change Password
+          </Text>
         </View>
       </TouchableOpacity>
     </ScrollView>
