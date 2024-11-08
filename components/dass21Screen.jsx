@@ -11,6 +11,10 @@ import tw from "tailwind-react-native-classnames";
 import { loadThemeConfig, getThemeConfig } from "../app/themeConfig";
 import { useFocusEffect } from "@react-navigation/native";
 import axios from "axios";
+import { router } from "expo-router";
+import { useRoute } from "@react-navigation/native"; // Import useRoute
+import { db } from "../components/firebase-config"; // Adjust the path based on your project structure
+import { collection, addDoc, serverTimestamp } from "firebase/firestore"; // Import Firestore functions
 
 // Constants for the translation API
 const apiKey = "c4601f1be388488aa7433f305ff71533";
@@ -56,7 +60,66 @@ const translateText = async (text, language) => {
   }
 };
 
-const Dass21Screen = ({ selectedLanguage }) => {
+const Dass21Screen = ({ selectedLanguage, userEmail }) => {
+  const questions = [
+    { text: "I found it hard to wind down", subscale: "Stress" },
+    { text: "I was aware of dryness of my mouth", subscale: "Anxiety" },
+    {
+      text: "I couldn't seem to experience any positive feeling at all",
+      subscale: "Depression",
+    },
+    {
+      text: "I experienced breathing difficulty (e.g., excessively rapid breathing, breathlessness in the absence of physical exertion)",
+      subscale: "Anxiety",
+    },
+    {
+      text: "I found it difficult to work up the initiative to do things",
+      subscale: "Depression",
+    },
+    { text: "I tended to over-react to situations", subscale: "Stress" },
+    {
+      text: "I experienced trembling (e.g., in the hands)",
+      subscale: "Anxiety",
+    },
+    {
+      text: "I felt that I was using a lot of nervous energy",
+      subscale: "Stress",
+    },
+    {
+      text: "I was worried about situations in which I might panic and make a fool of myself",
+      subscale: "Anxiety",
+    },
+    {
+      text: "I felt that I had nothing to look forward to",
+      subscale: "Depression",
+    },
+    { text: "I found myself getting agitated", subscale: "Stress" },
+    { text: "I found it difficult to relax", subscale: "Stress" },
+    { text: "I felt down-hearted and blue", subscale: "Depression" },
+    {
+      text: "I was intolerant of anything that kept me from getting on with what I was doing",
+      subscale: "Stress",
+    },
+    { text: "I felt I was close to panic", subscale: "Anxiety" },
+    {
+      text: "I was unable to become enthusiastic about anything",
+      subscale: "Depression",
+    },
+    {
+      text: "I felt I wasn’t worth much as a person",
+      subscale: "Depression",
+    },
+    { text: "I felt that I was rather touchy", subscale: "Stress" },
+    {
+      text: "I was aware of the action of my heart in the absence of physical exertion (e.g., sense of heart rate increase, heart missing a beat)",
+      subscale: "Anxiety",
+    },
+    {
+      text: "I felt scared without any good reason",
+      subscale: "Anxiety",
+    },
+    { text: "I felt that life was meaningless", subscale: "Depression" },
+  ];
   const [theme, setTheme] = useState({
     colors: {},
     fontSizes: {},
@@ -82,36 +145,14 @@ const Dass21Screen = ({ selectedLanguage }) => {
         const config = getThemeConfig();
         setTheme(config || {});
 
-        const questions = [
-          "I found it hard to wind down",
-          "I was aware of dryness of my mouth",
-          "I couldn't seem to experience any positive feeling at all",
-          "I experienced breathing difficulty (e.g., excessively rapid breathing, breathlessness in the absence of physical exertion)",
-          "I found it difficult to work up the initiative to do things",
-          "I tended to over-react to situations",
-          "I experienced trembling (e.g., in the hands)",
-          "I felt that I was using a lot of nervous energy",
-          "I was worried about situations in which I might panic and make a fool of myself",
-          "I felt that I had nothing to look forward to",
-          "I found myself getting agitated",
-          "I found it difficult to relax",
-          "I felt down-hearted and blue",
-          "I was intolerant of anything that kept me from getting on with what I was doing",
-          "I felt I was close to panic",
-          "I was unable to become enthusiastic about anything",
-          "I felt I wasn’t worth much as a person",
-          "I felt that I was rather touchy",
-          "I was aware of the action of my heart in the absence of physical exertion (e.g., sense of heart rate increase, heart missing a beat)",
-          "I felt scared without any good reason",
-          "I felt that life was meaningless",
-        ];
-
         const translatedQuestions = await Promise.all(
-          questions.map((question) => translateText(question, selectedLanguage))
+          questions.map((question) =>
+            translateText(question.text, selectedLanguage)
+          )
         );
 
         setTranslatedText({
-          questions: translatedQuestions,
+          questions: translatedQuestions, // Array of translated question texts (strings)
           next: await translateText("Next", selectedLanguage),
           submit: await translateText("Submit", selectedLanguage),
           pageInfo: await translateText("Page", selectedLanguage),
@@ -122,9 +163,57 @@ const Dass21Screen = ({ selectedLanguage }) => {
       loadThemeAndTranslations();
     }, [selectedLanguage])
   );
+  const calculateScores = () => {
+    let depressionScore = 0;
+    let anxietyScore = 0;
+    let stressScore = 0;
+
+    // Sum the scores for each subscale
+    questions.forEach((question, index) => {
+      const response = answers[index] || 0; // Default to 0 if no response
+      if (question.subscale === "Depression") {
+        depressionScore += response;
+      } else if (question.subscale === "Anxiety") {
+        anxietyScore += response;
+      } else if (question.subscale === "Stress") {
+        stressScore += response;
+      }
+    });
+
+    // Multiply each score by 2
+    depressionScore *= 2;
+    anxietyScore *= 2;
+    stressScore *= 2;
+
+    return { depressionScore, anxietyScore, stressScore };
+  };
+
+  const classifySeverity = (score, subscale) => {
+    if (subscale === "Depression") {
+      if (score >= 28) return "Extremely Severe";
+      if (score >= 21) return "Severe";
+      if (score >= 14) return "Moderate";
+      if (score >= 10) return "Mild";
+      return "Normal";
+    } else if (subscale === "Anxiety") {
+      if (score >= 20) return "Extremely Severe";
+      if (score >= 15) return "Severe";
+      if (score >= 10) return "Moderate";
+      if (score >= 8) return "Mild";
+      return "Normal";
+    } else if (subscale === "Stress") {
+      if (score >= 34) return "Extremely Severe";
+      if (score >= 26) return "Severe";
+      if (score >= 19) return "Moderate";
+      if (score >= 15) return "Mild";
+      return "Normal";
+    }
+  };
 
   // Answer handling
   const handleAnswer = (questionIndex, answer) => {
+    const questionText = questions[questionIndex].text; // Get the question text based on the index
+
     setAnswers((prevAnswers) => ({
       ...prevAnswers,
       [questionIndex]: answer,
@@ -137,28 +226,70 @@ const Dass21Screen = ({ selectedLanguage }) => {
     }
   };
 
-  const submitAssessment = () => {
-    alert(translatedText.submit + " " + "Assessment Submitted");
-    console.log("User Answers:", answers);
+  const saveAssessment = async (userId, results) => {
+    try {
+      const docRef = await addDoc(collection(db, "assessments"), {
+        userId: userId,
+        assessmentData: results,
+        timestamp: serverTimestamp(),
+      });
+      console.log("Assessment added with ID: ", docRef.id);
+    } catch (error) {
+      console.error("Error adding assessment: ", error);
+    }
+  };
+
+  const submitAssessment = async () => {
+    // Check if all questions have been answered
+    if (Object.keys(answers).length !== questions.length) {
+      alert("Please answer all questions before submitting."); // Alert for incomplete answers
+      return; // Exit the function if not all questions are answered
+    }
+    const { depressionScore, anxietyScore, stressScore } = calculateScores();
+
+    const results = {
+      depression: classifySeverity(depressionScore, "Depression"),
+      anxiety: classifySeverity(anxietyScore, "Anxiety"),
+      stress: classifySeverity(stressScore, "Stress"),
+      scores: {
+        depression: depressionScore,
+        anxiety: anxietyScore,
+        stress: stressScore,
+      },
+    };
+    // Ensure `results` is an object and log it
+
+    console.log("Saving assessment data...");
+    await saveAssessment(userEmail, results);
+
+    // Navigate to success screen with results
+    router.push({
+      pathname: "/Dass21Success",
+      params: { results: JSON.stringify(results) }, // Explicitly stringify `results`
+    });
   };
 
   // Render each question with translated text
   const renderQuestion = (questionIndex) => (
     <View style={styles.questionContainer} key={questionIndex}>
       <Text style={{ color: theme.colors.textPrimary, fontSize: textSize }}>
-        {translatedText.questions[questionIndex - 1]}
+        {translatedText.questions[questionIndex - 1] ||
+          questions[questionIndex - 1].text}
       </Text>
+
       <View style={styles.answerRow}>
         {[0, 1, 2, 3].map((value) => (
           <TouchableOpacity
             key={value}
             style={[
               styles.answerButton,
-              answers[questionIndex] === value && {
+              answers[questionIndex - 1] === value && {
                 backgroundColor: theme.colors.accent || "#a5a5ff",
               },
             ]}
-            onPress={() => handleAnswer(questionIndex, value)}
+            onPress={() => {
+              handleAnswer(questionIndex - 1, value); // Pass zero-based index
+            }}
           >
             <Text
               style={{
@@ -192,10 +323,35 @@ const Dass21Screen = ({ selectedLanguage }) => {
       {page === 5 && [21].map(renderQuestion)}
 
       <View style={styles.buttonContainer}>
+        {page > 1 && (
+          <TouchableOpacity
+            style={[styles.navigationButton, styles.backButton]}
+            onPress={() => setPage(page - 1)}
+          >
+            <Text style={{ color: "#fff", fontSize: textSize }}>
+              {translatedText.back || "Back"}
+            </Text>
+          </TouchableOpacity>
+        )}
+
         {page < 5 ? (
-          <Button title={translatedText.next} onPress={nextPage} />
+          <TouchableOpacity
+            style={[styles.navigationButton, styles.nextButton]}
+            onPress={() => setPage(page + 1)}
+          >
+            <Text style={{ color: "#fff", fontSize: textSize }}>
+              {translatedText.next || "Next"}
+            </Text>
+          </TouchableOpacity>
         ) : (
-          <Button title={translatedText.submit} onPress={submitAssessment} />
+          <TouchableOpacity
+            style={[styles.navigationButton, styles.nextButton]}
+            onPress={submitAssessment}
+          >
+            <Text style={{ color: "#fff", fontSize: textSize }}>
+              {translatedText.submit || "Submit"}
+            </Text>
+          </TouchableOpacity>
         )}
       </View>
     </View>
@@ -225,7 +381,22 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
   },
   buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 20,
+  },
+  navigationButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderRadius: 8,
+    marginHorizontal: 5,
+  },
+  backButton: {
+    backgroundColor: "#FF6347", // Red for back button
+  },
+  nextButton: {
+    backgroundColor: "#6200EE", // Theme color or default color for next/submit button
   },
 });
 

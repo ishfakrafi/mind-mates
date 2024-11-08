@@ -139,7 +139,7 @@ const TopBar = ({ firstName, selectedLanguage, setSelectedLanguage }) => {
             value: null,
             color: theme.colors?.accent || "#6200EE",
           }}
-          value={selectedLanguage}
+          value={selectedLanguage || null}
         />
 
         <TouchableOpacity

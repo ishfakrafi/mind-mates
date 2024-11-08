@@ -35,6 +35,7 @@ const Profile = () => {
   });
   const [firstName, setFirstName] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [userEmail, setUserEmail] = useState("");
   const [translatedText, setTranslatedText] = useState({});
 
   const theme = getThemeConfig(); // Get the theme configuration, including colors
@@ -88,6 +89,7 @@ const Profile = () => {
       const fullName = currentUser.displayName || "Anonymous User";
       const firstName = fullName.split(" ")[0];
       setFirstName(firstName);
+      setUserEmail(currentUser.email);
       setUser({
         displayName: fullName,
         email: currentUser.email,
@@ -244,6 +246,7 @@ const Profile = () => {
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <TopBar
         firstName={firstName}
+        email={userEmail}
         selectedLanguage={selectedLanguage}
         setSelectedLanguage={setSelectedLanguage}
       />

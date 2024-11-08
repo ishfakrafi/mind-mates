@@ -44,6 +44,7 @@ export default function ExploreScreen() {
   const [selectedTab, setSelectedTab] = useState("Assessment");
   const [view, setView] = useState("default");
   const [firstName, setFirstName] = useState("User");
+  const [userEmail, setUserEmail] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [theme, setTheme] = useState({
     colors: {},
@@ -146,6 +147,7 @@ export default function ExploreScreen() {
         if (currentUser) {
           const displayName = currentUser.displayName || "User";
           setFirstName(displayName.split(" ")[0]);
+          setUserEmail(currentUser.email); // Store the user's email
         }
       };
 
@@ -210,7 +212,10 @@ export default function ExploreScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-          <DASS21Screen selectedLanguage={selectedLanguage} />
+          <DASS21Screen
+            selectedLanguage={selectedLanguage}
+            userEmail={userEmail}
+          />
         </View>
       );
     }
