@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "project",
-    "slug": "project",
+    "name": "project-test",
+    "slug": "test4",
     "owner": "ishfak",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -28,7 +28,11 @@
       },
       "package": "com.galaxies.firebase",
       "bundleIdentifier": "com.galaxies.firebase",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -64,12 +68,12 @@
         "origin": false
       },
       "eas": {
-        "projectId": "bac9558f-4708-4fc2-b638-5ba39e4c7f04"
+        "projectId": "b93a2fd2-bd41-4033-b596-40ee5346e763"
       }
     },
     "runtimeVersion": "1.0.0",
     "updates": {
-      "url": "https://u.expo.dev/bac9558f-4708-4fc2-b638-5ba39e4c7f04"
+      "url": "https://u.expo.dev/b93a2fd2-bd41-4033-b596-40ee5346e763"
     }
   }
 }
