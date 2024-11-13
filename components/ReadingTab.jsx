@@ -12,6 +12,19 @@ const apiRegion = "australiaeast";
 // Translation cache to store translated texts
 const translationCache = {};
 
+// Define and export readings data
+export const readingsData = [
+  {
+    key: "What is Anxiety?",
+    title: "What is Anxiety?",
+    time: "5min",
+    description: "Understand your mental well-being with a brief overview.",
+    imageUrl:
+      "https://edge.sitecorecloud.io/beyondblue1-beyondblueltd-p69c-fe1e/media/Project/Sites/beyondblue/Homepage/Vertical-Card-Group-600-x-330/understanding-anxiety.png?h=330&iar=0&w=600", // Placeholder URL
+  },
+  // Additional readings can be added here
+];
+
 // Modified translateText function with caching
 const translateText = async (text, language) => {
   if (language === "en") return text;
@@ -21,7 +34,6 @@ const translateText = async (text, language) => {
     return translationCache[language][text];
   }
 
-  // Proceed with translation if not in cache
   try {
     const response = await axios.post(
       `https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=${language}`,
@@ -50,6 +62,7 @@ const translateText = async (text, language) => {
   }
 };
 
+// Your existing ReadingTab component
 const ReadingTab = ({ setView, selectedLanguage }) => {
   const [theme, setTheme] = useState({
     colors: {},
@@ -61,8 +74,7 @@ const ReadingTab = ({ setView, selectedLanguage }) => {
   const [translatedText, setTranslatedText] = useState({
     title: "Reading 1",
     time: "5min",
-    description:
-      "Understand your mental well-being with our quick, insightful assessment.",
+    description: "Understand your mental well-being with a brief overview.",
   });
 
   // Load theme
@@ -83,14 +95,14 @@ const ReadingTab = ({ setView, selectedLanguage }) => {
       const newTranslatedText = {
         title:
           selectedLanguage === "en"
-            ? "Reading 1"
-            : await translateText("Reading 1", selectedLanguage),
+            ? "What is anxiety?"
+            : await translateText("What is anxiety?", selectedLanguage),
         time:
           selectedLanguage === "en"
             ? "5min"
             : await translateText("5min", selectedLanguage),
         description: await translateText(
-          "Understand your mental well-being with our quick, insightful assessment.",
+          "Understand your mental well-being with a brief overview.",
           selectedLanguage
         ),
       };

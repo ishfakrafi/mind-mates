@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
+  ActivityIndicator,
   ScrollView,
   Image,
   TouchableOpacity,
@@ -9,126 +10,80 @@ import {
   Switch,
 } from "react-native";
 import axios from "axios";
-import { updateProfile, signOut } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import * as Notifications from "expo-notifications";
 import * as ImagePicker from "expo-image-picker";
 import { auth } from "../../components/firebase-config";
 import TopBar from "../src/TopBar";
-import { useNavigation } from "@react-navigation/native";
 import { icons } from "../../constants";
-import { router } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { loadThemeConfig, getThemeConfig } from "../themeConfig"; // Ensure correct path
+import { loadThemeConfig, getThemeConfig } from "../themeConfig";
+import { translateText } from "../translator";
+import { LanguageContext } from "../LanguageContext";
+import { UserContext } from "../UserContext";
+import { router } from "expo-router";
 
 const Profile = () => {
-  const navigation = useNavigation();
+  const [theme, setTheme] = useState({
+    colors: {},
+    fontSizes: {},
+    baseFontSize: 16,
+  });
+  const { user, loadUserData } = useContext(UserContext); // Access user data
+  const { selectedLanguage, setSelectedLanguage } = useContext(LanguageContext);
 
+  const [profileImage, setProfileImage] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [textSize, setTextSize] = useState(16);
-
   const [isNotificationEnabled, setIsNotificationEnabled] = useState(false);
-  const [user, setUser] = useState({
-    displayName: "",
-    email: "",
-    photoURL: null,
-  });
-  const [firstName, setFirstName] = useState("");
-  const [selectedLanguage, setSelectedLanguage] = useState("en");
-  const [userEmail, setUserEmail] = useState("");
   const [translatedText, setTranslatedText] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
 
-  const theme = getThemeConfig(); // Get the theme configuration, including colors
-
-  const apiKey = "c4601f1be388488aa7433f305ff71533";
-  const apiRegion = "australiaeast";
-
-  // Function to translate text
-  const translateText = async (text) => {
-    try {
-      const response = await axios.post(
-        `https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=${selectedLanguage}`,
-        [{ text }],
-        {
-          headers: {
-            "Ocp-Apim-Subscription-Key": apiKey,
-            "Ocp-Apim-Subscription-Region": apiRegion,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      return response.data[0]?.translations[0]?.text || text;
-    } catch (error) {
-      console.error("Error translating text:", error);
-      return text;
-    }
-  };
-
+  // Initialize theme configuration
   useFocusEffect(
     React.useCallback(() => {
-      const initializeTheme = async () => {
-        await loadThemeConfig(); // Load saved theme config from AsyncStorage
+      const loadThemeAndUser = async () => {
+        await loadThemeConfig();
         const config = getThemeConfig();
-        setIsDarkMode(config.isDarkMode);
-        setTextSize(config.baseFontSize);
+        setTheme(config || {});
       };
-
-      initializeTheme();
+      loadThemeAndUser();
     }, [])
   );
 
+  // Trigger data load and set loading state
   useEffect(() => {
-    console.log("Dark mode:", isDarkMode);
-    console.log("Text size:", textSize);
-  }, [isDarkMode, textSize]);
+    const fetchData = async () => {
+      if (!user) {
+        await loadUserData();
+      }
+      setIsLoading(false); // Stop loading once data is retrieved
+    };
+    fetchData();
+  }, [user, loadUserData]); // Only depends on user and loadUserDa
 
-  // Load user data
-  useEffect(() => {
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      const fullName = currentUser.displayName || "Anonymous User";
-      const firstName = fullName.split(" ")[0];
-      setFirstName(firstName);
-      setUserEmail(currentUser.email);
-      setUser({
-        displayName: fullName,
-        email: currentUser.email,
-        photoURL: currentUser.photoURL,
-      });
-    }
-  }, []);
-
-  // Load translations based on selected language and user data
+  // Translate text based on selected language
   useEffect(() => {
     const loadTranslations = async () => {
       const translations = {
-        hello: await translateText("Hello"),
-        userName: await translateText(`${user.displayName}`),
-        notification: await translateText("Notification"),
-        privacy: await translateText("Privacy and Security"),
-        appearance: await translateText("Appearance"),
-        logout: await translateText("Log out"),
-        deleteAccount: await translateText("Delete my account"),
-        alertSuccess: await translateText("Success"),
-        alertPictureUpdated: await translateText(
-          "Your profile picture has been updated."
+        hello: await translateText("Hello", selectedLanguage),
+        userName: await translateText(
+          user?.displayName || "User",
+          selectedLanguage
         ),
-        alertDeleteAccount: await translateText(
-          "Are you sure you want to delete your account? This action cannot be undone."
-        ),
-        alertNotificationPermission: await translateText(
-          "Sorry, we need notification permissions to make this work!"
-        ),
-        alertError: await translateText("Error"),
-        alertReauthenticate: await translateText(
-          "Please reauthenticate before deleting your account."
+        notification: await translateText("Notification", selectedLanguage),
+        privacy: await translateText("Privacy and Security", selectedLanguage),
+        appearance: await translateText("Appearance", selectedLanguage),
+        logout: await translateText("Log out", selectedLanguage),
+        deleteAccount: await translateText(
+          "Delete my account",
+          selectedLanguage
         ),
       };
       setTranslatedText(translations);
     };
-
-    loadTranslations();
-  }, [selectedLanguage, user.displayName]);
+    if (user) loadTranslations(); // Run only if user data is available
+  }, [selectedLanguage, user]);
 
   // Handle notification permissions
   const requestNotificationPermissions = async () => {
@@ -139,70 +94,53 @@ const Profile = () => {
       if (status !== "granted") {
         Alert.alert(
           translatedText.alertNotificationPermission ||
-            "Sorry, we need notification permissions to make this work!"
+            "Notification permissions required!"
         );
       }
     }
   };
 
-  // Handle photo change
+  // Handle photo change and upload to Firestore
   const handlePhotoChange = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (permissionResult.granted === false) {
-      alert(
-        translatedText.alertError ||
-          "Permission to access the media library is required!"
-      );
+    if (!permissionResult.granted) {
+      alert("Permission to access the media library is required!");
       return;
     }
-
-    let result = await ImagePicker.launchImageLibraryAsync({
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
     });
-
     if (!result.canceled) {
-      const currentUser = auth.currentUser;
       const newPhotoURL = result.assets[0].uri;
-
-      await updateProfile(currentUser, { photoURL: newPhotoURL });
-
-      setUser((prevUser) => ({
-        ...prevUser,
-        photoURL: newPhotoURL,
-      }));
-
-      Alert.alert(
-        translatedText.alertSuccess || "Success",
-        translatedText.alertPictureUpdated ||
-          "Your profile picture has been updated."
-      );
+      try {
+        await loadUserData(); // Refresh user data after updating profile image
+        setProfileImage(newPhotoURL); // Update the local state
+        Alert.alert("Success", "Your profile picture has been updated.");
+      } catch (error) {
+        console.error("Error saving profile image:", error);
+        Alert.alert("Error", "There was an issue saving your profile picture.");
+      }
     }
   };
-
+  const handleAppearance = () => {
+    router.push("/Appearance");
+  };
+  const handlePrivacyStatement = () => {
+    router.push("/PrivacySecurity");
+  };
   const handleLogout = () => {
     signOut(auth)
       .then(() => {
         console.log("User signed out");
-        router.replace("/");
       })
       .catch((error) => {
         console.error("Error signing out:", error);
       });
   };
-
-  const handlePrivacyStatement = () => {
-    router.push("/PrivacySecurity");
-  };
-
-  const handleAppearance = () => {
-    router.push("/Appearance");
-  };
-
   const handleDeleteAccount = () => {
     Alert.alert(
       translatedText.deleteAccount || "Delete Account",
@@ -242,11 +180,15 @@ const Profile = () => {
     );
   };
 
+  if (isLoading) {
+    return <ActivityIndicator size="large" color="#0000ff" />;
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <TopBar
-        firstName={firstName}
-        email={userEmail}
+        firstName={user.displayName?.split(" ")[0]}
+        email={user.email}
         selectedLanguage={selectedLanguage}
         setSelectedLanguage={setSelectedLanguage}
       />
@@ -257,7 +199,7 @@ const Profile = () => {
           >
             <View style={{ position: "relative" }}>
               <Image
-                source={user.photoURL ? { uri: user.photoURL } : icons.google}
+                source={user?.photoURL ? { uri: user.photoURL } : icons.google}
                 style={{ width: 80, height: 80, borderRadius: 40 }}
               />
               <TouchableOpacity
@@ -285,7 +227,7 @@ const Profile = () => {
                   color: theme.colors.heading,
                 }}
               >
-                {translatedText.userName || `${user.displayName}`}
+                {translatedText.userName || user.displayName}
               </Text>
               <Text
                 style={{
@@ -297,16 +239,15 @@ const Profile = () => {
               </Text>
             </View>
           </View>
-
           {/* Notification Switch */}
           <View
             style={{
               padding: 16,
               borderBottomWidth: 1,
-              borderBottomColor: theme.colors.divider,
               flexDirection: "row",
               justifyContent: "space-between",
               alignItems: "center",
+              borderBottomColor: theme.colors.divider,
             }}
           >
             <Text
@@ -319,7 +260,6 @@ const Profile = () => {
               onValueChange={requestNotificationPermissions}
             />
           </View>
-
           {/* Privacy and Security */}
           <TouchableOpacity onPress={handlePrivacyStatement}>
             <View
@@ -336,7 +276,6 @@ const Profile = () => {
               </Text>
             </View>
           </TouchableOpacity>
-
           {/* Appearance */}
           <TouchableOpacity onPress={handleAppearance}>
             <View
@@ -353,7 +292,6 @@ const Profile = () => {
               </Text>
             </View>
           </TouchableOpacity>
-
           {/* Log Out */}
           <TouchableOpacity onPress={handleLogout}>
             <View
@@ -370,7 +308,6 @@ const Profile = () => {
               </Text>
             </View>
           </TouchableOpacity>
-
           {/* Delete Account */}
           <TouchableOpacity onPress={handleDeleteAccount}>
             <View style={{ padding: 16, backgroundColor: theme.colors.danger }}>

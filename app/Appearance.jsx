@@ -37,19 +37,23 @@ const AppearanceScreen = () => {
     console.log("Dark mode toggled:", updatedConfig.isDarkMode);
   };
 
-  // Update text size and save to AsyncStorage
-  const handleTextSizeChangeComplete = async (value) => {
-    setBaseFontSize(value);
-    setTextSize(value);
-    console.log("Text size changed to:", value);
-  };
+  // Define text sizes and labels for the three steps
+  const textSizes = [16, 20, 22];
+  const textSizeLabels = ["Normal", "Large", "Extra Large"];
 
+  const handleTextSizeChangeComplete = async (step) => {
+    const newSize = textSizes[step]; // Map the slider step to the corresponding text size
+    setBaseFontSize(newSize);
+    setTextSize(newSize);
+    console.log("Text size changed to:", newSize);
+  };
   // Reset theme settings to defaults
   const resetPreferences = async () => {
     try {
-      await AsyncStorage.removeItem("themeConfig");
+      await clearThemeConfig();
       setIsDarkMode(false);
       setTextSize(16);
+      await loadThemeConfig();
       Alert.alert("Preferences Reset", "Appearance settings have been reset.");
     } catch (error) {
       console.log("Failed to reset settings:", error);
@@ -93,9 +97,10 @@ const AppearanceScreen = () => {
           Text Size
         </Text>
         <Slider
-          minimumValue={12}
-          maximumValue={24}
-          value={textSize}
+          minimumValue={0}
+          maximumValue={2}
+          step={1} // Set to move in increments of 1 (0, 1, 2)
+          value={textSizes.indexOf(textSize)} // Start at the current text size step
           onSlidingComplete={handleTextSizeChangeComplete}
         />
         <Text
@@ -105,7 +110,7 @@ const AppearanceScreen = () => {
             color: theme.colors.textSecondary,
           }}
         >
-          {textSize.toFixed(0)}
+          {textSizeLabels[textSizes.indexOf(textSize)]} {/* Display label */}
         </Text>
       </View>
 

@@ -33,6 +33,7 @@ export const provider = new GoogleAuthProvider();
 
 // Initialize Cloud Firestore and get a reference to the service
 const db = getFirestore(app);
+export const firestore = getFirestore(app);
 
 export { db };
 
@@ -53,6 +54,3 @@ const addAssessment = async (userId, results) => {
     console.error("Error adding assessment: ", error);
   }
 };
-
-// Example of calling the function with dummy data
-addAssessment("user123", { depression: 42, anxiety: 42, stress: 36 });

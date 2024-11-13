@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { Link, router } from "expo-router";
 import { Image, ScrollView, Text, View, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -6,7 +6,9 @@ import { CustomButton, IconButton } from "../components";
 import { icons } from "../constants";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
-import { AppearanceProvider } from "../app/AppearanceContext";
+import { AppearanceProvider } from "./AppearanceContext";
+import { LanguageContext } from "./LanguageContext";
+import { LanguageProvider } from "./LanguageContext";
 import * as Notifications from "expo-notifications";
 import {
   signInWithCredential,
@@ -14,6 +16,9 @@ import {
   onAuthStateChanged,
 } from "firebase/auth";
 import { auth } from "../components/firebase-config";
+import tw from "tailwind-react-native-classnames";
+import { UserProvider } from "./UserContext";
+import { UserContext } from "./UserContext";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -33,6 +38,7 @@ const SignIn = () => {
   );
   const [emailText, setEmailText] = useState("Login with Email");
   const [googleText, setGoogleText] = useState("Login with Google");
+  const { user } = useContext(UserContext);
 
   // Notification Permission and Handler Setup
   useEffect(() => {
@@ -85,54 +91,69 @@ const SignIn = () => {
         });
     }
   }, [response]);
-
+  const languageContext = useContext(LanguageContext);
+  console.log("Inside App - LanguageContext:", languageContext);
+  useEffect(() => {
+    console.log("UserContext data:", user);
+  }, [user]); // Logs whenever user data changes
   // Show loading indicator while checking authentication state
   if (loading) {
     return (
-      <SafeAreaView className="bg-primary h-full">
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#ffffff" />
-        </View>
+      <SafeAreaView style={tw`flex-1 justify-center items-center`}>
+        <ActivityIndicator size="large" color="#ffffff" />
       </SafeAreaView>
     );
   }
 
   // If the user is not signed in, show the login options
   return (
-    <SafeAreaView className="bg-primary h-full">
-      <ScrollView contentContainerStyle={{ height: "100%" }}>
-        <View className="w-full justify-center items-center h-full px-4">
-          <Image
-            source={require("../assets/images/icon.png")}
-            className="w-[500px] h-[100px]"
-            resizeMode="contain"
-          />
-
-          {/* Display text */}
-          <Text style={{ color: "#FFFFFF" }}>{journeyText}</Text>
-
-          <View className="relative mt-5">
-            <CustomButton
-              title={emailText}
-              handlePress={() => router.push("/sign-in")}
-              width={350}
-              containerStyles={{ marginTop: 16 }}
+    <UserProvider>
+      <LanguageProvider>
+        <SafeAreaView style={[tw`flex-1`, { backgroundColor: "#AB79FD" }]}>
+          <ScrollView
+            contentContainerStyle={tw`flex-grow justify-center items-center px-4`}
+          >
+            <Image
+              source={require("../assets/images/icon.png")}
+              style={tw` mb-4`}
+              resizeMode="contain"
             />
-          </View>
-          <View className="relative mt-5">
-            <IconButton
-              title={googleText}
-              handlePress={promptAsync}
-              icon={icons.google}
-              width={350}
-              containerStyles={{ marginTop: 16 }}
-            />
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+
+            {/* Display text */}
+            <Text style={tw`text-white text-lg text-center mb-6`}>
+              {journeyText}
+            </Text>
+
+            <View style={tw`w-full`}>
+              <CustomButton
+                title={emailText}
+                handlePress={() => router.push("/sign-in")}
+                width={350}
+                containerStyles={tw`mt-6`}
+              />
+              <View style={tw`mt-4`}>
+                <IconButton
+                  title={googleText}
+                  handlePress={promptAsync}
+                  icon={icons.google}
+                  width={350}
+                  containerStyles={tw`mt-4`}
+                />
+              </View>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </LanguageProvider>
+    </UserProvider>
   );
 };
 
-// Export SignIn wrapped in AppearanceProvider
-export default () => <SignIn />;
+export default function App() {
+  return (
+    <UserProvider>
+      <LanguageProvider>
+        <SignIn />
+      </LanguageProvider>
+    </UserProvider>
+  );
+}

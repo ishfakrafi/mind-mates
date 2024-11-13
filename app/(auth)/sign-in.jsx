@@ -1,22 +1,21 @@
-import { useState } from "react";
+import { useState, useLayoutEffect, useContext } from "react";
 import { Link, router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View, Text, ScrollView, Dimensions, Alert, Image } from "react-native";
-
-// Add this:
+import { View, Text, ScrollView, Dimensions, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { useLayoutEffect } from "react";
-
 import { images } from "../../constants";
 import { CustomButton, FormField } from "../../components";
-import { auth, provider } from "../../components/firebase-config.js";
+import { auth } from "../../components/firebase-config.js";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import tw from "tailwind-react-native-classnames";
+import { LanguageContext } from "../LanguageContext.jsx"; // Import the context
 
 const SignIn = () => {
   const [form, setForm] = useState({
     email: "",
     password: "",
   });
+  const { selectedLanguage, setSelectedLanguage } = useContext(LanguageContext);
 
   const navigation = useNavigation();
 
@@ -37,7 +36,7 @@ const SignIn = () => {
       .then((userCredential) => {
         console.log("User signed in:", userCredential.user);
         setTimeout(() => {
-          router.push("/profile"); // Slight delay to allow navigation setup
+          router.push("/home"); // Slight delay to allow navigation setup
         }, 500); // Adjust the delay if necessary
       })
       .catch((error) => {
@@ -47,47 +46,62 @@ const SignIn = () => {
   };
 
   return (
-    <SafeAreaView className="bg-primary h-full">
-      <ScrollView>
+    <SafeAreaView style={[tw`flex-1`, { backgroundColor: "#AB79FD" }]}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View
-          className="w-full flex justify-center h-full px-4 my-6"
-          style={{
-            minHeight: Dimensions.get("window").height - 500,
-          }}
+          style={[
+            tw`flex justify-center px-4 my-6`,
+            { minHeight: Dimensions.get("window").height - 500 },
+          ]}
         >
-          <Text className="text-2xl font-semibold text-white mt-10 font-psemibold">
+          <Text
+            style={[
+              tw`text-2xl font-semibold mt-10`,
+              { color: "#FFFFFF", fontFamily: "psemibold" },
+            ]}
+          >
             Log in to MindMates
           </Text>
 
           <FormField
             title="Email"
-            //value={form.email}
             handleChangeText={(e) => setForm({ ...form, email: e })}
-            otherStyles="mt-7"
+            otherStyles={tw`mt-7`}
             keyboardType="email-address"
           />
 
           <FormField
             title="Password"
-            //value={form.password}
             handleChangeText={(e) => setForm({ ...form, password: e })}
-            otherStyles="mt-7"
+            otherStyles={tw`mt-7`}
           />
-          <View className="relative mt-5">
+
+          <View style={[tw`relative`, { marginTop: 16 }]}>
             <CustomButton
               title="Login"
               handlePress={handleLogin}
               width={350}
               marginLeft={18}
-              containerStyles={{ marginTop: 16 }}
+              containerStyles={tw`mt-4`}
             />
           </View>
 
-          <View className="flex justify-center pt-5 flex-row gap-2">
-            <Text className="text-lg text-gray-100 font-pregular">
+          <View style={tw`flex justify-center pt-5 flex-row`}>
+            <Text
+              style={[
+                tw`text-lg pr-2`,
+                { color: "#D3D3D3", fontFamily: "pregular" },
+              ]}
+            >
               Don't have an account?
             </Text>
-            <Link href="/sign-up" className="text-lg font-psemibold">
+            <Link
+              href="/sign-up"
+              style={[
+                tw`text-lg`,
+                { fontFamily: "psemibold", color: "#3461FD" },
+              ]}
+            >
               Signup
             </Link>
           </View>

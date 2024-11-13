@@ -9,6 +9,7 @@ const defaultThemeConfig = {
   colors: {
     light: {
       background: "#f0f0f0",
+      bg2: "#dedcdc",
       textPrimary: "#333333",
       textSecondary: "#666666",
       heading: "#000000",

@@ -61,9 +61,10 @@ const Reading1 = ({ selectedLanguage }) => {
   const textSize = theme.baseFontSize || 16;
 
   const [translatedText, setTranslatedText] = useState({
-    title: "Mental Health Awareness",
+    title: "What is Anxiety?",
     description:
-      "Discover the importance of mental health and how it impacts every aspect of life.",
+      "Anxiety is more than just stress or worry. It's a persistent feeling of unease that doesn’t go away and may affect daily life.\nAnxiety is common in Australia, affecting 1 in 4 people at some stage in their lives.\nSigns and Symptoms of Anxiety\nCommon symptoms include:\nPersistent worry\nDifficulty calming down\nFatigue, muscle tension, sleep issues\nTrouble concentrating\nThese symptoms develop over time and can make it challenging to cope.",
+
     button: "Read More",
   });
 
@@ -77,13 +78,10 @@ const Reading1 = ({ selectedLanguage }) => {
         const newTranslatedText = {
           title:
             selectedLanguage === "en"
-              ? "Mental Health Awareness"
-              : await translateText(
-                  "Mental Health Awareness",
-                  selectedLanguage
-                ),
+              ? "What is Anxiety?"
+              : await translateText("What is Anxiety?", selectedLanguage),
           description: await translateText(
-            "Discover the importance of mental health and how it impacts every aspect of life.",
+            "What is Anxiety?\nAnxiety is more than just stress or worry. It's a persistent feeling of unease that doesn’t go away and may affect daily life.\nAnxiety is common in Australia, affecting 1 in 4 people at some stage in their lives.\nSigns and Symptoms of Anxiety\nCommon symptoms include:\nPersistent worry\nDifficulty calming down\nFatigue, muscle tension, sleep issues\nTrouble concentrating\nThese symptoms develop over time and can make it challenging to cope.",
             selectedLanguage
           ),
           button: await translateText("Read More", selectedLanguage),
@@ -97,7 +95,7 @@ const Reading1 = ({ selectedLanguage }) => {
   );
 
   const openResource = () => {
-    const url = "https://www.beyondblue.org.au/";
+    const url = "https://www.beyondblue.org.au/mental-health/anxiety";
     Linking.openURL(url);
   };
 
@@ -112,7 +110,7 @@ const Reading1 = ({ selectedLanguage }) => {
         {/* Image */}
         <Image
           source={{
-            uri: "https://www.beyondblue.org.au/images/default-source/mental-health-awareness.jpg",
+            uri: "https://edge.sitecorecloud.io/beyondblue1-beyondblueltd-p69c-fe1e/media/Project/Sites/beyondblue/Homepage/Vertical-Card-Group-600-x-330/understanding-anxiety.png?h=330&iar=0&w=600",
           }}
           style={styles.image}
         />
@@ -193,7 +191,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   description: {
-    textAlign: "center",
+    textAlign: "left",
     marginBottom: 20,
   },
   button: {

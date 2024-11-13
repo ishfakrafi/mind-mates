@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Image } from "react-native";
-
 import { icons } from "../constants";
+import tw from "tailwind-react-native-classnames";
 
 const FormField = ({
   title,
@@ -14,20 +14,23 @@ const FormField = ({
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <View className={`space-y-2 ${otherStyles}`}>
-      <Text
-        style={{ fontSize: 20 }}
-        className="text-base text-gray-100 font-pmedium"
-      >
+    <View style={[tw`${otherStyles}`]}>
+      <Text style={[tw`text-base`, { color: "#D3D3D3", fontSize: 16 }]}>
         {title}
       </Text>
 
       <View
-        style={{ backgroundColor: "#FFFFFF" }}
-        className="w-full h-16 px-4 bg-white-100 rounded-2xl border-1 border-black-200 focus:border-secondary flex flex-row items-center"
+        style={[
+          tw`w-full h-14 px-4 rounded-xl flex-row items-center`,
+          {
+            backgroundColor: "#FFFFFF",
+            borderColor: "#CCCCCC",
+            borderWidth: 1,
+          },
+        ]}
       >
         <TextInput
-          className="flex-1 text-black font-psemibold text-base"
+          style={[tw`flex-1  text-base`, { color: "#000000" }]}
           value={value}
           placeholder={placeholder}
           placeholderTextColor="#A9A9A9"
@@ -40,7 +43,7 @@ const FormField = ({
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
             <Image
               source={!showPassword ? icons.eye : icons.eyeHide}
-              className="w-6 h-6"
+              style={[tw`w-6 h-6`]}
               resizeMode="contain"
             />
           </TouchableOpacity>

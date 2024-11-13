@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { View, Text, TouchableOpacity, Modal, FlatList } from "react-native";
 import tw from "tailwind-react-native-classnames";
 import { Ionicons } from "@expo/vector-icons";
@@ -6,8 +6,10 @@ import RNPickerSelect from "react-native-picker-select";
 import axios from "axios";
 import { getThemeConfig } from "../themeConfig";
 import { useFocusEffect } from "@react-navigation/native";
+import { LanguageContext } from "../LanguageContext"; // Import the context
 
-const TopBar = ({ firstName, selectedLanguage, setSelectedLanguage }) => {
+const TopBar = ({ firstName }) => {
+  const { selectedLanguage, setSelectedLanguage } = useContext(LanguageContext); // Use context
   const [translatedGreeting, setTranslatedGreeting] = useState({
     hello: "Hello",
     goodMorning: `Good Morning, ${firstName}`,
@@ -16,7 +18,21 @@ const TopBar = ({ firstName, selectedLanguage, setSelectedLanguage }) => {
   const [notifications, setNotifications] = useState([]);
   const [theme, setTheme] = useState({ colors: {}, fontSizes: {} });
   const textSize = theme.baseFontSize;
-
+  const languageNames = {
+    en: "English",
+    zh: "Mandarin Chinese",
+    hi: "Hindi",
+    ne: "Nepali",
+    vi: "Vietnamese",
+    pt: "Portuguese",
+    ur: "Urdu",
+    ms: "Malay",
+    id: "Bahasa Indonesia",
+    ko: "Korean",
+    si: "Sinhalese",
+    ta: "Tamil",
+    bn: "Bengali",
+  };
   useFocusEffect(
     React.useCallback(() => {
       const loadTheme = async () => {
@@ -69,10 +85,6 @@ const TopBar = ({ firstName, selectedLanguage, setSelectedLanguage }) => {
     loadTranslations();
   }, [selectedLanguage, firstName]);
 
-  const handleLanguageChange = (value) => {
-    setSelectedLanguage(value);
-  };
-
   const handleNotificationPress = () => {
     setIsModalVisible(true);
     setNotifications(dummyNotifications);
@@ -116,31 +128,61 @@ const TopBar = ({ firstName, selectedLanguage, setSelectedLanguage }) => {
 
       {/* Right: Language and Notification Buttons */}
       <View style={tw`flex-row items-center`}>
-        <RNPickerSelect
-          onValueChange={handleLanguageChange}
-          items={[
-            { label: "English", value: "en" },
-            { label: "Bangla", value: "bn" },
-          ]}
-          style={{
-            inputIOS: {
-              fontSize: textSize || 16,
-              padding: 10,
-              color: theme.colors?.accent || "#6200EE",
-            },
-            inputAndroid: {
-              fontSize: textSize || 16,
-              padding: 10,
-              color: theme.colors?.accent || "#6200EE",
-            },
+        <TouchableOpacity
+          style={tw`flex-row items-center`}
+          onPress={() => {
+            // Programmatically open the picker by triggering the picker focus
+            this.pickerRef?.togglePicker && this.pickerRef.togglePicker();
           }}
-          placeholder={{
-            label: "Select Language",
-            value: null,
-            color: theme.colors?.accent || "#6200EE",
-          }}
-          value={selectedLanguage || null}
-        />
+        >
+          <Text
+            style={{
+              fontSize: textSize || 16,
+              color: theme.colors?.accent || "#6200EE",
+              marginRight: 10,
+            }}
+          >
+            {languageNames[selectedLanguage] || "Select Language"}
+          </Text>
+
+          <RNPickerSelect
+            ref={(ref) => (this.pickerRef = ref)} // Assign pickerRef to toggle programmatically
+            onValueChange={(value) => setSelectedLanguage(value)}
+            items={[
+              { label: "English", value: "en" },
+              { label: "Mandarin Chinese", value: "zh" },
+              { label: "Hindi", value: "hi" },
+              { label: "Nepali", value: "ne" },
+              { label: "Vietnamese", value: "vi" },
+              { label: "Portuguese", value: "pt" },
+              { label: "Urdu", value: "ur" },
+              { label: "Malay", value: "ms" },
+              { label: "Bahasa Indonesia", value: "id" },
+              { label: "Korean", value: "ko" },
+              { label: "Sinhalese", value: "si" },
+              { label: "Tamil", value: "ta" },
+              { label: "Bengali", value: "bn" },
+            ]}
+            style={{
+              inputIOS: {
+                fontSize: textSize || 16,
+                padding: 10,
+                color: theme.colors?.accent || "#6200EE",
+              },
+              inputAndroid: {
+                fontSize: textSize || 16,
+                padding: 10,
+                color: theme.colors?.accent || "#6200EE",
+              },
+            }}
+            placeholder={{
+              label: "Select Language",
+              value: null,
+              color: theme.colors?.accent || "#6200EE",
+            }}
+            value={selectedLanguage || null}
+          />
+        </TouchableOpacity>
 
         <TouchableOpacity
           onPress={handleNotificationPress}

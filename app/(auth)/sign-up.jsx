@@ -1,5 +1,4 @@
-import { useState } from "react";
-import React from "react";
+import { useState, useLayoutEffect } from "react";
 import { Link, router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -15,6 +14,7 @@ import {
 import { CustomButton, FormField } from "../../components";
 import { auth } from "../../components/firebase-config";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import tw from "tailwind-react-native-classnames";
 
 const SignUp = () => {
   const [form, setForm] = useState({
@@ -67,20 +67,25 @@ const SignUp = () => {
   };
 
   return (
-    <SafeAreaView className="bg-primary h-full">
+    <SafeAreaView style={[tw`flex-1`, { backgroundColor: "#AB79FD" }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0} // Adjust this offset as needed for iOS
+        style={tw`flex-1`}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
       >
-        <ScrollView>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
           <View
-            className="w-full flex justify-center h-full px-4 my-6"
-            style={{
-              minHeight: Dimensions.get("window").height - 500,
-            }}
+            style={[
+              tw`flex justify-center px-4 my-6`,
+              { minHeight: Dimensions.get("window").height - 500 },
+            ]}
           >
-            <Text className="text-2xl font-semibold text-white mt-10 font-psemibold">
+            <Text
+              style={[
+                tw`text-2xl font-semibold mt-10`,
+                { color: "#FFFFFF", fontFamily: "psemibold" },
+              ]}
+            >
               Get Started With MindMates
             </Text>
 
@@ -88,42 +93,42 @@ const SignUp = () => {
             <FormField
               title="First Name"
               handleChangeText={(e) => setForm({ ...form, fname: e })}
-              otherStyles="mt-7"
-              keyboardType="name"
+              otherStyles={tw`mt-2`}
+              keyboardType="default"
             />
             <FormField
               title="Last Name"
               handleChangeText={(e) => setForm({ ...form, lname: e })}
-              otherStyles="mt-7"
-              keyboardType="name"
+              otherStyles={tw`mt-7`}
+              keyboardType="default"
             />
             <FormField
               title="Date Of Birth"
               handleChangeText={(e) => setForm({ ...form, dob: e })}
-              otherStyles="mt-7"
-              keyboardType="name"
+              otherStyles={tw`mt-7`}
+              keyboardType="default"
             />
             <FormField
               title="Gender"
               handleChangeText={(e) => setForm({ ...form, gender: e })}
-              otherStyles="mt-7"
-              keyboardType="name"
+              otherStyles={tw`mt-7`}
+              keyboardType="default"
             />
             <FormField
               title="Email"
               handleChangeText={(e) => setForm({ ...form, email: e })}
-              otherStyles="mt-7"
+              otherStyles={tw`mt-7`}
               keyboardType="email-address"
             />
             <FormField
               title="Password"
               handleChangeText={(e) => setForm({ ...form, password: e })}
-              otherStyles="mt-7"
+              otherStyles={tw`mt-7`}
               secureTextEntry
             />
 
             {/* Button and Spinner */}
-            <View className="relative mt-5">
+            <View style={[tw`relative`, { marginTop: 16 }]}>
               {loading ? (
                 <ActivityIndicator size="large" color="#ffffff" />
               ) : (
@@ -132,16 +137,27 @@ const SignUp = () => {
                   handlePress={handleSignUp}
                   width={350}
                   marginLeft={18}
-                  containerStyles={{ marginTop: 16 }}
+                  containerStyles={tw`mt-4`}
                 />
               )}
             </View>
 
-            <View className="flex justify-center pt-5 flex-row gap-2">
-              <Text className="text-lg text-gray-100 font-pregular">
+            <View style={tw`flex justify-center pt-5 flex-row`}>
+              <Text
+                style={[
+                  tw`text-lg pr-2`,
+                  { color: "#D3D3D3", fontFamily: "pregular" },
+                ]}
+              >
                 Already have an account?
               </Text>
-              <Link href="/sign-in" className="text-lg font-psemibold">
+              <Link
+                href="/sign-in"
+                style={[
+                  tw`text-lg`,
+                  { fontFamily: "psemibold", color: "#3461FD" },
+                ]}
+              >
                 SignIn
               </Link>
             </View>

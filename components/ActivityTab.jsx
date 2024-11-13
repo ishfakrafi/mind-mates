@@ -10,6 +10,19 @@ const apiKey = "c4601f1be388488aa7433f305ff71533";
 const apiRegion = "australiaeast";
 const translationCache = {};
 
+// Define and export activities data
+export const activitiesData = [
+  {
+    key: "BoxBreathing",
+    title: "Box Breathing",
+    time: "5min",
+    description: "Relax and focus with a simple, effective breathing exercise.",
+    imageUrl:
+      "https://media.licdn.com/dms/image/v2/D5612AQF_TJOftV0Vtw/article-cover_image-shrink_720_1280/article-cover_image-shrink_720_1280/0/1698479758717?e=2147483647&v=beta&t=TjoXJAbiVSp2bLOk2kMXwHqotpPbkLzlt1cLaiw2FYs", // Placeholder URL; replace with actual
+  },
+  // Additional activities can be added here
+];
+
 // Caching and translating function
 const translateText = async (text, language) => {
   if (language === "en") return text;
@@ -46,6 +59,7 @@ const translateText = async (text, language) => {
   }
 };
 
+// Your existing ActivityTab component
 const ActivityTab = ({ setView, selectedLanguage }) => {
   const [theme, setTheme] = useState({
     colors: {},
@@ -57,8 +71,7 @@ const ActivityTab = ({ setView, selectedLanguage }) => {
   const [translatedText, setTranslatedText] = useState({
     title: "Box Breathing",
     time: "5min",
-    description:
-      "Understand your mental well-being with our quick, insightful assessment.",
+    description: "Relax and focus with a simple, effective breathing exercise.",
   });
 
   // Load theme and translations
@@ -79,7 +92,7 @@ const ActivityTab = ({ setView, selectedLanguage }) => {
               ? "5min"
               : await translateText("5min", selectedLanguage),
           description: await translateText(
-            "Understand your mental well-being with our quick, insightful assessment.",
+            "Relax and focus with a simple, effective breathing exercise.",
             selectedLanguage
           ),
         };

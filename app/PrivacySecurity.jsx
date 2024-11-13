@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -16,7 +16,11 @@ import {
 import { auth } from "../components/firebase-config"; // Make sure this is the correct path
 import { loadThemeConfig, getThemeConfig } from "../app/themeConfig"; // Import themeConfig
 import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LanguageContext } from "./LanguageContext";
+
 const PrivacySecurity = () => {
+  const { selectedLanguage, setSelectedLanguage } = useContext(LanguageContext);
   const navigation = useNavigation();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -30,28 +34,40 @@ const PrivacySecurity = () => {
   const textSize = theme.baseFontSize;
   // Check if displayName exists, and split if it's valid
   useEffect(() => {
-    if (auth.currentUser?.displayName) {
-      const nameParts = auth.currentUser.displayName.split(" ");
-      setFirstName(nameParts[0] || "");
-      setLastName(nameParts[1] || "");
-    } else {
-      // Handle the case where displayName is not set
-      setFirstName("");
-      setLastName("");
-    }
+    const loadNameFromCache = async () => {
+      const cachedFirstName = await AsyncStorage.getItem("userFirstName");
+      const cachedLastName = await AsyncStorage.getItem("userLastName");
+
+      if (cachedFirstName && cachedLastName) {
+        setFirstName(cachedFirstName);
+        setLastName(cachedLastName);
+      } else if (auth.currentUser?.displayName) {
+        const nameParts = auth.currentUser.displayName.split(" ");
+        setFirstName(nameParts[0] || "");
+        setLastName(nameParts[1] || "");
+      } else {
+        setFirstName("");
+        setLastName("");
+      }
+    };
+
+    loadNameFromCache();
   }, []);
 
-  const handleSaveDetails = () => {
+  const handleSaveDetails = async () => {
     const displayName = `${firstName} ${lastName}`.trim();
 
     if (auth.currentUser) {
-      updateProfile(auth.currentUser, { displayName })
-        .then(() => {
-          Alert.alert("Success", "User details updated successfully");
-        })
-        .catch((error) => {
-          Alert.alert("Error", error.message);
-        });
+      try {
+        await updateProfile(auth.currentUser, { displayName });
+        Alert.alert("Success", "User details updated successfully");
+
+        // Cache the updated name locally
+        await AsyncStorage.setItem("userFirstName", firstName);
+        await AsyncStorage.setItem("userLastName", lastName);
+      } catch (error) {
+        Alert.alert("Error", error.message);
+      }
     }
   };
 

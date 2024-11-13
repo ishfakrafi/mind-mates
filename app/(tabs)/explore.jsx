@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useContext } from "react";
 import { View, ScrollView, Text, Image, TouchableOpacity } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import SearchBar from "../../components/SearchBar";
@@ -13,8 +13,11 @@ import Reading1 from "../../components/Reading1";
 import { BoxBreathe } from "../../components/BoxBreathing";
 import { useFocusEffect } from "@react-navigation/native";
 import { loadThemeConfig, getThemeConfig } from "../themeConfig";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { auth } from "../../components/firebase-config";
 import axios from "axios";
+import { LanguageContext } from "../LanguageContext";
+import { UserContext } from "../UserContext";
 
 const apiKey = "c4601f1be388488aa7433f305ff71533";
 const apiRegion = "australiaeast";
@@ -43,9 +46,9 @@ const translateText = async (text, language) => {
 export default function ExploreScreen() {
   const [selectedTab, setSelectedTab] = useState("Assessment");
   const [view, setView] = useState("default");
-  const [firstName, setFirstName] = useState("User");
+
   const [userEmail, setUserEmail] = useState("");
-  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const { selectedLanguage, setSelectedLanguage } = useContext(LanguageContext);
   const [theme, setTheme] = useState({
     colors: {},
     fontSizes: {},
@@ -56,6 +59,16 @@ export default function ExploreScreen() {
   const activityRef = useRef(null);
   const readingRef = useRef(null);
   const faqRef = useRef(null);
+  const { user } = useContext(UserContext); // Access user details
+
+  useEffect(() => {
+    if (user) {
+      console.log("User Email:", user.email);
+      console.log("User Display Name:", user.displayName);
+    } else {
+      console.log("User data not available in Progress screen.");
+    }
+  }, [user]);
 
   // In ExploreScreen.js
 
@@ -95,6 +108,7 @@ export default function ExploreScreen() {
     motivationalQuotes: originalQuotes,
     close: "Close",
     assessmentTitle: "Assessment: .DASS. 21",
+    readingTitle: "Reading: What is anxiety?",
     boxTitle: "Activity: Box Breathing",
   });
 
@@ -138,20 +152,13 @@ export default function ExploreScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-      const loadThemeAndUser = async () => {
+      const loadThemeAndUserFromCache = async () => {
         await loadThemeConfig();
         const config = getThemeConfig();
         setTheme(config || {});
-
-        const currentUser = auth.currentUser;
-        if (currentUser) {
-          const displayName = currentUser.displayName || "User";
-          setFirstName(displayName.split(" ")[0]);
-          setUserEmail(currentUser.email); // Store the user's email
-        }
       };
 
-      loadThemeAndUser();
+      loadThemeAndUserFromCache();
     }, [])
   );
 
@@ -170,6 +177,10 @@ export default function ExploreScreen() {
         ),
         boxTitle: await translateText(
           "Activity: Box Breathing",
+          selectedLanguage
+        ),
+        readingTitle: await translateText(
+          "Reading: What is anxiety?",
           selectedLanguage
         ),
       };
@@ -237,7 +248,7 @@ export default function ExploreScreen() {
                 },
               ]}
             >
-              {translatedText.assessmentTitle}
+              {translatedText.readingTitle}
             </Text>
             <TouchableOpacity onPress={() => setView("default")}>
               <Text style={{ color: theme.colors.accent || "#6200EE" }}>
@@ -331,7 +342,7 @@ export default function ExploreScreen() {
         {view === "default" && (
           <>
             <TopBar
-              firstName={firstName}
+              firstName={user.displayName?.split(" ")[0]}
               selectedLanguage={selectedLanguage}
               setSelectedLanguage={setSelectedLanguage}
             />

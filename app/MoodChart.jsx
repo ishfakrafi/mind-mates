@@ -1,43 +1,152 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Dimensions, StyleSheet } from "react-native";
 import { LineChart } from "react-native-chart-kit";
+import { db } from "../components/firebase-config";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
-const MoodChart = () => {
-  const currentWeekData = {
-    Monday: 2,
-    Tuesday: 4,
-    Wednesday: 4,
-    Thursday: 3,
-    Friday: 1,
-    Saturday: 1,
-    Sunday: 2,
-  };
-
-  const historicalAverages = {
-    Monday: 3,
-    Tuesday: 4,
-    Wednesday: 3,
-    Thursday: 4,
-    Friday: 4,
-    Saturday: 3,
-    Sunday: 4,
-  };
-
+const MoodChart = ({ userEmail }) => {
+  const [currentWeekData, setCurrentWeekData] = useState([0, 0, 0, 0, 0, 0, 0]);
+  const [historicalAverageData, setHistoricalAverageData] = useState([
+    0, 0, 0, 0, 0, 0, 0,
+  ]);
   const screenWidth = Dimensions.get("window").width;
-  const chartHeight = 220; // Height for calculating emoji positions
+  const chartHeight = 220;
+
+  const moodValues = {
+    "Very Bad": -2,
+    Bad: -1,
+    Neutral: 0,
+    Good: 1,
+    "Very Good": 2,
+  };
+  const moodEmojis = {
+    "-2": "😢", // Very Bad
+    "-1": "😕", // Bad
+    0: "😐", // Neutral
+    1: "🙂", // Good
+    2: "😄", // Very Good
+  };
+
+  const adjustDayIndex = (sundayBasedIndex) => {
+    return sundayBasedIndex === 0 ? 6 : sundayBasedIndex - 1; // Adjusting to Monday as start
+  };
+
+  useEffect(() => {
+    const fetchMoodData = async () => {
+      if (!userEmail) {
+        console.error("User email is undefined");
+        return;
+      }
+
+      try {
+        const q = query(
+          collection(db, "moodEntries"),
+          where("userId", "==", userEmail)
+        );
+        const querySnapshot = await getDocs(q);
+
+        const today = new Date();
+        const startOfWeek = new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          today.getDate() - today.getDay() + 1 // Adjust to get Monday as the start
+        );
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const weekData = Array(7).fill([]); // Create an array for each day of the current week
+        const historicalData = Array(7).fill([]);
+        querySnapshot.forEach((doc) => {
+          const entry = doc.data();
+          const entryDate = new Date(entry.timestamp.seconds * 1000);
+          const sundayBasedDay = entryDate.getDay();
+          const mondayBasedDay = adjustDayIndex(sundayBasedDay);
+          if (entryDate >= startOfWeek && entryDate <= today) {
+            weekData[mondayBasedDay] = [
+              ...(weekData[mondayBasedDay] || []),
+              moodValues[entry.mood] || 0,
+            ];
+
+            console.log(
+              `Current week mood entry for ${entryDate.toDateString()}:`,
+              entry.mood,
+              `(Mapped to value: ${moodValues[entry.mood] || 0})`
+            );
+          } else {
+            // For entries not in the current week, add them to historical data
+            historicalData[mondayBasedDay] = [
+              ...(historicalData[mondayBasedDay] || []),
+              moodValues[entry.mood] || 0,
+            ];
+
+            console.log(
+              `Historical mood entry for ${entryDate.toDateString()}:`,
+              entry.mood,
+              `(Mapped to value: ${moodValues[entry.mood] || 0})`
+            );
+          }
+        });
+
+        const averagedWeekData = weekData.map((dayEntries) => {
+          console.log(dayEntries);
+          if (dayEntries.length == 0) return null; // Use null to indicate no data
+          const sum = dayEntries.reduce((acc, val) => acc + val, 0);
+          const avg = sum / dayEntries.length;
+          return avg;
+        });
+        console.log(averagedWeekData);
+        // Add dummy values at start and end
+        setCurrentWeekData([-2, ...averagedWeekData, 2]);
+
+        // Initialize historical average data with dummy values for testing (modify later for actual data)
+        const averagedHistoricalData = historicalData.map((dayEntries) => {
+          if (dayEntries.length === 0) return null; // Skip days with no historical entries
+          const sum = dayEntries.reduce((acc, val) => acc + val, 0);
+          return sum / dayEntries.length; // Average of only days with data
+        });
+
+        console.log("Averaged Historical Data:", averagedHistoricalData);
+        setHistoricalAverageData([-2, ...averagedHistoricalData, 2]);
+      } catch (error) {
+        console.error("Error fetching mood data: ", error);
+      }
+    };
+
+    fetchMoodData();
+  }, [userEmail]);
 
   const data = {
-    labels: ["M", "T", "W", "T", "F", "S", "S"],
+    labels: ["", "M", "T", "W", "T", "F", "S", "S", ""],
     datasets: [
       {
-        data: [1, ...Object.values(currentWeekData), 1],
-        color: (opacity = 1) => `rgba(255, 99, 132, ${opacity})`,
-        strokeWidth: 4,
+        data: currentWeekData,
+        color: (opacity = 1, index) => {
+          // Make the dummy data points transparent
+          return index === 0 || index === currentWeekData.length - 1
+            ? `rgba(0, 0, 0, 0)`
+            : `rgba(255, 99, 132, ${opacity})`;
+        },
+        strokeWidth: (index) =>
+          index === 0 || index === currentWeekData.length - 1 ? 0 : 4, // Hide the dummy points by setting strokeWidth to 0
       },
       {
-        data: [1, ...Object.values(historicalAverages), 1],
-        color: (opacity = 1) => `rgba(149, 128, 255, ${opacity})`,
-        strokeWidth: 4,
+        data: historicalAverageData,
+        color: (opacity = 1, index) => {
+          return index === 0 || index === historicalAverageData.length - 1
+            ? `rgba(0, 0, 0, 0)`
+            : `rgba(149, 128, 255, ${opacity})`;
+        },
+        strokeWidth: (index) =>
+          index === 1 || index === historicalAverageData.length - 1 ? 0 : 4,
+      },
+      {
+        data: [2, 2, 2, 2, 2, 2, 2, 2, 2], // Dummy dataset to force Y-axis scaling
+        color: () => `rgba(0, 0, 0, 0)`, // Set color to transparent
+        strokeWidth: 0, // Make lines invisible
+      },
+      {
+        data: [-2, -2, -2, -2, -2, -2, -2, -2, -2], // Dummy dataset to force Y-axis scaling
+        color: () => `rgba(0, 0, 0, 0)`, // Set color to transparent
+        strokeWidth: 0, // Make lines invisible
       },
     ],
   };
@@ -55,23 +164,13 @@ const MoodChart = () => {
       fontSize: 12,
     },
     strokeWidth: 2,
-    min: 1,
-    max: 5,
+    min: -2,
+    max: 2,
     count: 5,
     stepSize: 1,
+    formatYLabel: () => "",
+    fromZero: false,
   };
-
-  // Emoji mapping for mood levels
-  const moodEmojis = {
-    1: "😢", // Sad
-    2: "😕", // Slightly Upset
-    3: "😐", // Neutral
-    4: "🙂", // Happy
-    5: "😄", // Very Happy
-  };
-
-  // Calculate segment height for positioning emojis
-  const segmentHeight = chartHeight / 5;
 
   return (
     <View style={styles.container}>
@@ -95,40 +194,38 @@ const MoodChart = () => {
           <Text style={styles.legendText}>Historical Average</Text>
         </View>
       </View>
-      <View style={styles.chartContainer}>
-        <LineChart
-          data={data}
-          width={screenWidth - 40}
-          height={chartHeight}
-          chartConfig={chartConfig}
-          bezier
-          style={{
-            marginVertical: 8,
-            borderRadius: 16,
-          }}
-          withInnerLines={true}
-          withOuterLines={true}
-          withDots={false} // Skip the dots
-          withShadow={false}
-          segments={4}
-          withVerticalLabels={true} // Keep x-axis labels
-          withHorizontalLabels={false} // Hide y-axis numeric labels
-        />
-        {/* Custom Emoji Y-axis Labels */}
-        <View style={[styles.emojiYAxisContainer, { height: chartHeight }]}>
-          {Object.keys(moodEmojis)
-            .reverse()
-            .map((key, index) => (
-              <Text
-                key={index}
-                style={[
-                  styles.emojiLabel,
-                  { top: index * segmentHeight - 8 }, // Adjust emoji position
-                ]}
-              >
-                {moodEmojis[key]}
-              </Text>
-            ))}
+      <LineChart
+        data={data}
+        width={screenWidth - 40}
+        height={chartHeight}
+        chartConfig={chartConfig}
+        bezier
+        style={{ marginVertical: 8, borderRadius: 16 }}
+        withInnerLines={true}
+        fromZero={false}
+        segments={4}
+      />
+      {/* Manual Emoji Legend */}
+      <View style={styles.emojiLegendContainer}>
+        <View style={styles.emojiLegendItem}>
+          <Text style={styles.emoji}>😄</Text>
+          <Text style={styles.legendText}>= 2</Text>
+        </View>
+        <View style={styles.emojiLegendItem}>
+          <Text style={styles.emoji}>🙂</Text>
+          <Text style={styles.legendText}>= 1</Text>
+        </View>
+        <View style={styles.emojiLegendItem}>
+          <Text style={styles.emoji}>😐</Text>
+          <Text style={styles.legendText}>= 0</Text>
+        </View>
+        <View style={styles.emojiLegendItem}>
+          <Text style={styles.emoji}>😕</Text>
+          <Text style={styles.legendText}>= -1</Text>
+        </View>
+        <View style={styles.emojiLegendItem}>
+          <Text style={styles.emoji}>😢</Text>
+          <Text style={styles.legendText}>= -2</Text>
         </View>
       </View>
     </View>
@@ -142,23 +239,10 @@ const styles = StyleSheet.create({
     margin: 10,
     borderRadius: 16,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  chartContainer: {
-    alignItems: "center",
-    position: "relative",
   },
   legendContainer: {
     flexDirection: "row",
@@ -179,16 +263,20 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: 12,
   },
-  emojiYAxisContainer: {
-    position: "absolute",
-    top: 20,
-    left: 20, // Position to the left of the chart
-    justifyContent: "flex-start",
+  emojiLegendContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 16,
   },
-  emojiLabel: {
-    position: "absolute",
-    left: 0,
-    fontSize: 16,
+  emojiLegendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 10,
+  },
+  emoji: {
+    fontSize: 18,
+    marginRight: 4,
   },
 });
 
