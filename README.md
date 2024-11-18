@@ -3,6 +3,12 @@
 A mental health and wellness mobile application built using **React Native** and **Expo**. Designed to help users track their mood, complete assessments like DASS21, and explore curated readings. The app offers seamless login, multilingual support, and push notifications, creating an engaging and personalized experience.
 
 ---
+# Download the Android App
+
+🎉 First Release: You can download the APK file for the Mind Mates app from the link below:
+
+👉 [**Download Mind Mates v1.0.0-beta**](https://github.com/ishfakrafi/mind-mates/releases/tag/v1.0.0-beta)
+
 
 ## ✨ Features
 
@@ -70,4 +76,5 @@ A mental health and wellness mobile application built using **React Native** and
 
 
 ## 🤝 Contributors
-Ishfak Bin Munsur 
+- App Development: Ishfak Bin Munsur and Linda Hu
+- Background research, analysis and literature review: Linda Hu, Diana Innocent, and Liyue Zhang
