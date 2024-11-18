@@ -1,50 +1,73 @@
-# Welcome to your Expo app 👋
+# MindMates Mobile App 🚀
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A mental health and wellness mobile application built using **React Native** and **Expo**. Designed to help users track their mood, complete assessments like DASS21, and explore curated readings. The app offers seamless login, multilingual support, and push notifications, creating an engaging and personalized experience.
 
-## Get started
+---
 
-1. Install dependencies
+## ✨ Features
 
+- 📊 **Mood Tracking**: Log your daily moods and track your progress over time.
+- 📄 **Journaling**: Write your thoughts and feelings in a personal journal.
+- 📝 **DASS21 Assessment**: Measure Depression, Anxiety, and Stress levels with the scientifically validated DASS21 assessment.
+- 🧘 **Exercises**: Guided exercises for mindfulness and relaxation.
+- 📚 **Readings**: Explore curated articles to improve mental well-being.
+- 🔔 **Notifications**: Gentle reminders to check in with your mental health.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework**: React Native (Expo)
+- **Backend**: Firebase Firestore for authentication, user data and notifications
+- **APIs**: WordPress REST API for dynamic content and Azure Translator API for real-time content translation into multiple languages
+- **Notifications**: Expo Push Notifications
+
+---
+
+## ⚙️ Installation
+
+1. Clone the repository:
    ```bash
+   git clone https://github.com/your-repo/mindmates-app.git
+   ```
+2. Navigate to the project directory:
+   ```bash
+   cd mindmates-app
+   ```
+   Install dependencies:
+3. ```bash
    npm install
    ```
-
-2. Start the app
-
+4. Start the development server:
    ```bash
-    npx expo start
+   npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+## 🌟 How It Works
+1. Mood Tracking:
+- Log how you're feeling every day.
+- Get insights into your emotional patterns over time.
+2. Journaling:
+- Write freely about your day.
+- All entries are securely stored in Firebase Firestore.
+3. Explore Readings:
+- Dynamic content is fetched from WordPress.
+- Provides relevant and curated articles.
+4. DASS21 Assessment:
+- Answer preset questions.
+- Self assessment on your Depression, Anxiety and Stress levels.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+# API Integration
+## WordPress REST API
+- Articles and readings are dynamically fetched using the WordPress REST API.
+-URL: https://mindmates.adventcom.co/wp-json/wp/v2/posts
+## Firebase
+- Authentication: Google Sign-In and Email Login
+- Database: Firestore for user data and logs
+- Push Notifications: Expo Notifications API
+## Azure
+- Real-time translation: To tailor content to user's native language
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 🤝 Contributors
+Ishfak Bin Munsur 
