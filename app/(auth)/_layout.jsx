@@ -8,7 +8,7 @@ const AuthLayout = () => {
   return (
     <UserProvider>
       <LanguageProvider>
-        <Stack>
+        <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="sign-in" options={{ headerShown: false }} />
         </Stack>
       </LanguageProvider>

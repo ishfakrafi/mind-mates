@@ -189,7 +189,7 @@ export default function Home() {
   return (
     <ScrollView
       style={[
-        tw`flex-1 p-4`,
+        tw`flex-1 p-4 py-8`,
         { backgroundColor: theme.colors.background || "#F5F5F5" },
       ]}
     >
@@ -222,7 +222,7 @@ export default function Home() {
             >
               <View style={{ alignSelf: "flex-start" }}>
                 <MoodChart
-                  userEmail={user.email}
+                  userEmail={user?.email || "guestemail"}
                   style={{ position: "relative", left: -10 }}
                 />
               </View>

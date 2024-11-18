@@ -12,6 +12,7 @@ import tw from "tailwind-react-native-classnames";
 import { loadThemeConfig, getThemeConfig } from "../app/themeConfig";
 import { useFocusEffect } from "@react-navigation/native";
 import axios from "axios";
+import RenderHtml from "react-native-render-html";
 
 // Constants for the translation API and caching
 const apiKey = "c4601f1be388488aa7433f305ff71533";
@@ -52,7 +53,10 @@ const translateText = async (text, language) => {
   }
 };
 
-const Reading1 = ({ selectedLanguage }) => {
+const Reading1 = ({ post, selectedLanguage }) => {
+  if (!post) return null;
+  console.log("Final Post Data in Reading1:", post);
+  console.log("HTML Content to Render:", post.content);
   const [theme, setTheme] = useState({
     colors: {},
     fontSizes: {},
@@ -100,70 +104,42 @@ const Reading1 = ({ selectedLanguage }) => {
   };
 
   return (
-    <ScrollView
-      contentContainerStyle={[
-        tw`p-4`,
-        { backgroundColor: theme.colors.background || "#FFF" },
-      ]}
-    >
-      <View style={styles.container}>
-        {/* Image */}
+    <ScrollView style={tw`p-4 pb-12`}>
+      {/* Title */}
+      <Text style={[tw`text-2xl font-bold mb-2`, { color: "#333" }]}>
+        {post.title}
+      </Text>
+
+      {/* Tag */}
+      <Text style={[tw`text-sm font-semibold mb-4`, { color: "#888" }]}>
+        {post.tag}
+      </Text>
+
+      {/* Image */}
+      {post.imageUrl && (
         <Image
-          source={{
-            uri: "https://edge.sitecorecloud.io/beyondblue1-beyondblueltd-p69c-fe1e/media/Project/Sites/beyondblue/Homepage/Vertical-Card-Group-600-x-330/understanding-anxiety.png?h=330&iar=0&w=600",
-          }}
-          style={styles.image}
+          source={{ uri: post.imageUrl }}
+          style={[{ width: "100%", height: 200, borderRadius: 10 }, tw`mb-4`]}
+          resizeMode="cover"
         />
+      )}
 
-        {/* Logo */}
-        <Image
-          source={{
-            uri: "https://www.beyondblue.org.au/images/default-source/logo.png",
-          }}
-          style={styles.logo}
-        />
+      {/* Source */}
+      <Text style={[tw`text-sm mb-4`, { color: "#888" }]}>
+        Source: {post.source}
+      </Text>
 
-        {/* Title */}
-        <Text
-          style={[
-            styles.title,
-            {
-              color: theme.colors.textPrimary || "black",
-              fontSize: textSize + 4,
-            },
-          ]}
-        >
-          {translatedText.title}
-        </Text>
-
-        {/* Description */}
-        <Text
-          style={[
-            styles.description,
-            { color: theme.colors.textSecondary || "gray", fontSize: textSize },
-          ]}
-        >
-          {translatedText.description}
-        </Text>
-
-        {/* Button */}
-        <TouchableOpacity
-          style={[
-            styles.button,
-            { backgroundColor: theme.colors.accent || "#6200EE" },
-          ]}
-          onPress={openResource}
-        >
-          <Text
-            style={{
-              color: theme.colors.cswhite || "#FFF",
-              fontSize: textSize,
-            }}
-          >
-            {translatedText.button}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {/* Content */}
+      <RenderHtml
+        contentWidth={400} // Adjust based on screen width
+        source={{ html: post.content }}
+        tagsStyles={{
+          p: { marginBottom: 10, color: "#333", fontSize: 16 },
+          ul: { paddingLeft: 20, marginBottom: 10 },
+          li: { marginBottom: 5, fontSize: 16, color: "#333" },
+          a: { color: "#1E90FF", textDecorationLine: "underline" },
+        }}
+      />
     </ScrollView>
   );
 };

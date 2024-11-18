@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect, useContext } from "react";
+import { useState, useLayoutEffect, useContext, useEffect } from "react";
 import { Link, router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Text, ScrollView, Dimensions, Alert } from "react-native";
@@ -18,6 +18,9 @@ const SignIn = () => {
   const { selectedLanguage, setSelectedLanguage } = useContext(LanguageContext);
 
   const navigation = useNavigation();
+  useEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });

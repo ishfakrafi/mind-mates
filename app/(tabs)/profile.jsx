@@ -22,6 +22,9 @@ import { translateText } from "../translator";
 import { LanguageContext } from "../LanguageContext";
 import { UserContext } from "../UserContext";
 import { router } from "expo-router";
+import tw from "tailwind-react-native-classnames";
+import * as FileSystem from "expo-file-system";
+import { getFirestore, doc, updateDoc } from "firebase/firestore";
 
 const Profile = () => {
   const [theme, setTheme] = useState({
@@ -30,6 +33,7 @@ const Profile = () => {
     baseFontSize: 16,
   });
   const { user, loadUserData } = useContext(UserContext); // Access user data
+  console.log("User from Context:", user);
   const { selectedLanguage, setSelectedLanguage } = useContext(LanguageContext);
 
   const [profileImage, setProfileImage] = useState(null);
@@ -99,7 +103,7 @@ const Profile = () => {
       }
     }
   };
-
+  const firestore = getFirestore();
   // Handle photo change and upload to Firestore
   const handlePhotoChange = async () => {
     const permissionResult =
@@ -108,24 +112,56 @@ const Profile = () => {
       alert("Permission to access the media library is required!");
       return;
     }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 1,
+      quality: 0.5, // Compress image for smaller size
     });
-    if (!result.canceled) {
-      const newPhotoURL = result.assets[0].uri;
+
+    console.log("Image Picker Result:", result);
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const imageUri = result.assets[0].uri;
+
+      if (!imageUri) {
+        Alert.alert("Error", "Invalid image URI.");
+        return;
+      }
+
+      // Get the currently authenticated user
+      const currentUser = auth.currentUser;
+      if (!currentUser || !currentUser.uid) {
+        console.log("Auth currentUser:", currentUser);
+        Alert.alert("Error", "User is not authenticated.");
+        return;
+      }
+
       try {
-        await loadUserData(); // Refresh user data after updating profile image
-        setProfileImage(newPhotoURL); // Update the local state
+        // Convert image to Base64
+        const base64Image = await FileSystem.readAsStringAsync(imageUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        console.log("Base64 Image Length:", base64Image.length);
+
+        // Update Firestore with Base64 image
+        const userDocRef = doc(firestore, "users", currentUser.uid); // Use the valid UID
+        await updateDoc(userDocRef, { profilePicture: base64Image });
+
+        setProfileImage(`data:image/jpeg;base64,${base64Image}`);
         Alert.alert("Success", "Your profile picture has been updated.");
+        console.log(`data:image/jpeg;base64,${base64Image}`);
       } catch (error) {
-        console.error("Error saving profile image:", error);
+        console.error("Error updating profile picture:", error);
         Alert.alert("Error", "There was an issue saving your profile picture.");
       }
+    } else {
+      Alert.alert("Error", "Image selection was canceled or invalid.");
     }
   };
+
   const handleAppearance = () => {
     router.push("/Appearance");
   };
@@ -136,6 +172,7 @@ const Profile = () => {
     signOut(auth)
       .then(() => {
         console.log("User signed out");
+        router.replace("/");
       })
       .catch((error) => {
         console.error("Error signing out:", error);
@@ -185,7 +222,12 @@ const Profile = () => {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <View
+      style={[
+        tw`p-4 py-8`,
+        { flex: 1, backgroundColor: theme.colors.background },
+      ]}
+    >
       <TopBar
         firstName={user.displayName?.split(" ")[0]}
         email={user.email}
@@ -199,9 +241,10 @@ const Profile = () => {
           >
             <View style={{ position: "relative" }}>
               <Image
-                source={user?.photoURL ? { uri: user.photoURL } : icons.google}
+                source={{ uri: profileImage }}
                 style={{ width: 80, height: 80, borderRadius: 40 }}
               />
+
               <TouchableOpacity
                 style={{
                   position: "absolute",

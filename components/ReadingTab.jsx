@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Image } from "react-native";
 import tw from "tailwind-react-native-classnames";
 import { loadThemeConfig, getThemeConfig } from "../app/themeConfig";
 import { useFocusEffect } from "@react-navigation/native";
@@ -15,14 +15,22 @@ const translationCache = {};
 // Define and export readings data
 export const readingsData = [
   {
-    key: "What is Anxiety?",
+    key: "anxiety",
     title: "What is Anxiety?",
-    time: "5min",
-    description: "Understand your mental well-being with a brief overview.",
+    tag: "Mental Health",
+    source: "Mindful Living",
     imageUrl:
-      "https://edge.sitecorecloud.io/beyondblue1-beyondblueltd-p69c-fe1e/media/Project/Sites/beyondblue/Homepage/Vertical-Card-Group-600-x-330/understanding-anxiety.png?h=330&iar=0&w=600", // Placeholder URL
+      "https://i2-prod.getsurrey.co.uk/incoming/article30240076.ece/ALTERNATES/s615/1_GettyImages-1403986369.jpg",
   },
-  // Additional readings can be added here
+  {
+    key: "design2021",
+    title: "My Creative Collection of 2021 Design",
+    tag: "Design",
+    source: "Laurance",
+    imageUrl:
+      "https://i2-prod.getsurrey.co.uk/incoming/article30240076.ece/ALTERNATES/s615/1_GettyImages-1403986369.jpg",
+  },
+  // Add more readings as needed
 ];
 
 // Modified translateText function with caching
@@ -63,18 +71,25 @@ const translateText = async (text, language) => {
 };
 
 // Your existing ReadingTab component
-const ReadingTab = ({ setView, selectedLanguage }) => {
+const ReadingTab = ({
+  setView,
+  selectedLanguage,
+  setSelectedTab,
+  setSelectedPost,
+}) => {
   const [theme, setTheme] = useState({
     colors: {},
     fontSizes: {},
     baseFontSize: 16,
   });
   const textSize = theme.baseFontSize || 16;
+  const [readingsData, setReadingsData] = useState([]);
 
   const [translatedText, setTranslatedText] = useState({
     title: "Reading 1",
     time: "5min",
     description: "Understand your mental well-being with a brief overview.",
+    close: "close",
   });
 
   // Load theme
@@ -99,8 +114,12 @@ const ReadingTab = ({ setView, selectedLanguage }) => {
             : await translateText("What is anxiety?", selectedLanguage),
         time:
           selectedLanguage === "en"
-            ? "5min"
+            ? "50min"
             : await translateText("5min", selectedLanguage),
+        close:
+          selectedLanguage === "en"
+            ? "Close"
+            : await translateText("Close", selectedLanguage),
         description: await translateText(
           "Understand your mental well-being with a brief overview.",
           selectedLanguage
@@ -112,59 +131,140 @@ const ReadingTab = ({ setView, selectedLanguage }) => {
     loadTranslations();
   }, [selectedLanguage]);
 
+  useEffect(() => {
+    const fetchReadings = async () => {
+      try {
+        const response = await axios.get(
+          "https://mindmates.adventcom.co/wp-json/wp/v2/posts"
+        );
+        console.log("Raw WordPress Data:", response.data); // Log the raw data from WordPress API
+        const posts = await Promise.all(
+          response.data.map(async (post) => {
+            // Extract category and source (tag) from `class_list`
+            const categoryClass = post.class_list.find((cls) =>
+              cls.startsWith("category-")
+            );
+            const tagClass = post.class_list.find((cls) =>
+              cls.startsWith("tag-")
+            );
+
+            const category = categoryClass
+              ? categoryClass.replace("category-", "")
+              : "General";
+            const source = tagClass
+              ? tagClass.replace("tag-", "")
+              : "WordPress Source";
+
+            // Fetch the featured image URL if available
+            let imageUrl = "https://via.placeholder.com/80"; // Default placeholder
+            if (post.featured_media) {
+              try {
+                const mediaResponse = await axios.get(
+                  `https://mindmates.adventcom.co/wp-json/wp/v2/media/${post.featured_media}`
+                );
+                imageUrl = mediaResponse.data.source_url || imageUrl;
+              } catch (error) {
+                console.error(
+                  `Error fetching image for post ${post.id}:`,
+                  error
+                );
+              }
+            }
+
+            return {
+              key: post.id.toString(),
+              title: post.title.rendered,
+              tag: category,
+              source: source,
+              imageUrl: imageUrl,
+              content: post.content.rendered,
+            };
+          })
+        );
+
+        setReadingsData(posts);
+        console.log("Mapped Readings Data:", posts); // Log the mapped data structure for verification
+      } catch (error) {
+        console.error("Error fetching data from WordPress:", error);
+      }
+    };
+
+    fetchReadings();
+  }, []);
+
   return (
-    <ScrollView vertical style={tw`flex flex-col w-full`}>
+    <ScrollView vertical style={tw`flex pb-12 flex-col w-full`}>
+      {/* Back Button */}
+
       <TouchableOpacity
-        style={[
-          tw`flex-row p-4 mb-4 items-center`,
-          {
-            backgroundColor: theme.colors.secondaryBackground || "#F8F9FA",
-            borderRadius: 25,
-          },
-        ]}
-        onPress={() => setView("READING1")}
+        onPress={() => {
+          setSelectedTab("Assessment"); // Set tab back to Assessment
+          setView("default"); // Reset view to ExploreScreen
+        }}
+        style={tw`flex-row items-center p-4`}
       >
-        <View style={[{ borderRadius: 45 }]} />
-        <View style={tw`ml-4`}>
-          <View style={tw`flex-row items-center`}>
+        <Text style={{ color: theme.colors.accent || "#6200EE" }}>
+          {translatedText.close}
+        </Text>
+      </TouchableOpacity>
+      {readingsData.map((reading) => (
+        <TouchableOpacity
+          key={reading.key}
+          style={[
+            tw`flex-row px-4 mx-4 pb-0 mb-4 rounded-xl`,
+            { backgroundColor: theme.colors.background || "#FFFFFF" },
+            {
+              shadowColor: "#000",
+              shadowOpacity: 0.8,
+              shadowRadius: 1,
+              elevation: 2,
+            },
+          ]}
+          onPress={() => {
+            setSelectedPost(reading); // Set the selected post data
+            setView("READING1"); // Navigate to Reading1 view
+          }} // Update this as per your navigation
+        >
+          {/* Image */}
+          <Image
+            source={{ uri: reading.imageUrl }}
+            style={[{ width: 80, height: 80, borderRadius: 10 }]}
+          />
+
+          {/* Text Section */}
+          <View style={tw`ml-4 flex-1`}>
+            {/* Tag */}
             <Text
-              style={{
-                color: theme.colors.textPrimary || "black",
-                fontSize: textSize - 2,
-                fontWeight: "600",
-              }}
+              style={[
+                tw`text-xs font-semibold my-1`,
+                { color: theme.colors.accent || "#888" },
+              ]}
             >
-              {translatedText.title}
+              {reading.tag}
             </Text>
-            <View
-              style={{
-                width: 4,
-                height: 4,
-                backgroundColor: theme.colors.textPrimary || "black",
-                borderRadius: 2,
-                marginHorizontal: 8,
-              }}
-            />
+
+            {/* Title */}
             <Text
-              style={{
-                color: theme.colors.textSecondary || "#666",
-                fontSize: textSize - 4,
-              }}
+              style={[
+                tw`text-lg font-bold mb-0`,
+                { color: theme.colors.textPrimary || "#333" },
+              ]}
             >
-              {translatedText.time}
+              {reading.title}
+            </Text>
+
+            {/* Source */}
+            <Text
+              style={[
+                tw`text-sm mb-2`,
+                { color: theme.colors.textSecondary || "#666" },
+              ]}
+            >
+              {reading.source}
             </Text>
           </View>
-          <Text
-            style={{
-              color: theme.colors.textSecondary || "#666",
-              fontSize: textSize - 4,
-              marginTop: 4,
-            }}
-          >
-            {translatedText.description}
-          </Text>
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      ))}
     </ScrollView>
   );
 };

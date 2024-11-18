@@ -1,5 +1,12 @@
 import React, { useRef, useState, useEffect, useContext } from "react";
-import { View, ScrollView, Text, Image, TouchableOpacity } from "react-native";
+import {
+  View,
+  ScrollView,
+  Text,
+  Image,
+  TouchableOpacity,
+  Linking,
+} from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import SearchBar from "../../components/SearchBar";
 import TopBar from "../src/TopBar";
@@ -46,6 +53,7 @@ const translateText = async (text, language) => {
 export default function ExploreScreen() {
   const [selectedTab, setSelectedTab] = useState("Assessment");
   const [view, setView] = useState("default");
+  const [selectedPost, setSelectedPost] = useState(null);
 
   const [userEmail, setUserEmail] = useState("");
   const { selectedLanguage, setSelectedLanguage } = useContext(LanguageContext);
@@ -70,6 +78,18 @@ export default function ExploreScreen() {
     }
   }, [user]);
 
+  useEffect(() => {
+    // Make a request to the WordPress REST API
+    axios
+      .get("https://mindmates.adventcom.co/wp-json/wp/v2/posts")
+      .then((response) => {
+        console.log("WordPress Data:", response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching data from WordPress:", error);
+      });
+  }, []);
+
   // In ExploreScreen.js
 
   const handleSelectSuggestion = (item) => {
@@ -80,7 +100,6 @@ export default function ExploreScreen() {
       setSelectedTab("Activity"); // Switch to the relevant tab if necessary
       setView("Box"); // Open the Box Breathing component
     } else if (item.id === "Reading1") {
-      setSelectedTab("Reading"); // Switch to the Reading tab if necessary
       setView("Reading1"); // Open the Reading1 component
     } else if (item.id.startsWith("FAQ")) {
       setSelectedTab("Faq"); // Switch to the FAQ tab if necessary
@@ -247,16 +266,19 @@ export default function ExploreScreen() {
                   color: theme.colors.textPrimary || "#333",
                 },
               ]}
+            ></Text>
+            <TouchableOpacity
+              onPress={() => {
+                setView("Reading");
+                setSelectedTab("Reading");
+              }}
             >
-              {translatedText.readingTitle}
-            </Text>
-            <TouchableOpacity onPress={() => setView("default")}>
               <Text style={{ color: theme.colors.accent || "#6200EE" }}>
                 {translatedText.close}
               </Text>
             </TouchableOpacity>
           </View>
-          <Reading1 selectedLanguage={selectedLanguage} />
+          <Reading1 post={selectedPost} selectedLanguage={selectedLanguage} />
         </View>
       );
     }
@@ -313,6 +335,8 @@ export default function ExploreScreen() {
         return (
           <ReadingTab
             setView={setView}
+            setSelectedTab={setSelectedTab}
+            setSelectedPost={setSelectedPost}
             selectedLanguage={selectedLanguage}
             setSelectedLanguage={setSelectedLanguage}
           />
@@ -334,7 +358,7 @@ export default function ExploreScreen() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ScrollView
         style={[
-          tw`flex-1`,
+          tw`flex-1 py-8`,
           { backgroundColor: theme.colors.background || "#FFFFFF" },
         ]}
         contentContainerStyle={tw`flex-col`}
@@ -362,18 +386,45 @@ export default function ExploreScreen() {
                 style={[{ marginTop: -20 }]}
               />
 
-              <View style={[tw`p-4`, { width: 180, alignSelf: "flex-start" }]}>
-                <Text
-                  style={{
-                    color: "#2C2C2E" || "#333",
-                    fontSize: textSize,
-                    textAlign: "center",
+              <View
+                style={[
+                  tw`p-4 items-center justify-center`, // Center the buttons vertically and horizontally
+                  { width: 180, alignSelf: "center" }, // Ensure it's centered in the pink div
+                ]}
+              >
+                {/* Button 1 */}
+                <TouchableOpacity
+                  style={[
+                    tw`bg-blue-500 rounded-md px-4 py-2 mb-4`,
+                    { backgroundColor: theme.colors.accent || "#ac7afd" }, // Styling for the button
+                  ]}
+                  onPress={() => {
+                    Linking.openURL(
+                      "https://accesshc.org.au/support-services-for-international-students/"
+                    );
                   }}
-                  numberOfLines={3} // Limit to 3 lines to avoid overflow
                 >
-                  {currentQuote ||
-                    translatedText.motivationalQuotes[quoteIndex]}
-                </Text>
+                  <Text style={tw`text-white text-center`}>
+                    Support services for international students
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Button 2 */}
+                <TouchableOpacity
+                  style={[
+                    tw` rounded-md px-4 py-2`,
+                    { backgroundColor: theme.colors.accent || "#ac7afd" }, // Styling for the button
+                  ]}
+                  onPress={() => {
+                    Linking.openURL(
+                      "https://www.studyaustralia.gov.au/en/life-in-australia/student-support-services/health-and-wellbeing"
+                    );
+                  }}
+                >
+                  <Text style={tw`text-white text-center`}>
+                    Student health and wellbeing support
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -396,7 +447,15 @@ export default function ExploreScreen() {
                                 theme.colors.background || "#f0f0f0",
                             },
                       ]}
-                      onPress={() => setSelectedTab(tab)}
+                      onPress={() => {
+                        if (tab === "Reading") {
+                          setSelectedTab(tab);
+                          setView("Reading1"); // Directly set view to "Reading1" for the Reading tab
+                        } else {
+                          setSelectedTab(tab);
+                          setView("default"); // Keep existing behavior for other tabs
+                        }
+                      }}
                     >
                       <Text
                         style={[

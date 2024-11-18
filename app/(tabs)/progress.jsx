@@ -320,7 +320,7 @@ export default function Progress() {
   return (
     <ScrollView
       style={[
-        tw`flex-1  pb-16`,
+        tw`flex-1  pb-16 py-8`,
         { backgroundColor: theme.colors.background || "#FFFFFF" },
       ]}
     >
