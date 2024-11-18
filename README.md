@@ -76,5 +76,5 @@ A mental health and wellness mobile application built using **React Native** and
 
 
 ## 🤝 Contributors
-- App Development: Ishfak Bin Munsur and Linda Hu
-- Background research, analysis and literature review: Linda Hu, Diana Innocent, and Liyue Zhang
+- Software developers: Ishfak Bin Munsur and Linda Hu
+- Design Architecture, research and analysis: Diana Innocent and Liyue Zhang
